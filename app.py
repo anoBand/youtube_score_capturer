@@ -3,9 +3,11 @@ import sys
 import subprocess
 import threading
 from flask import Flask, render_template, request, jsonify, send_file
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
+CORS(app)
 
 # 전역 상태
 is_frozen = getattr(sys, 'frozen', False)
