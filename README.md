@@ -5,6 +5,7 @@ Typed by python.
 
 essential installation :
 ffmpeg
+python
 
 essential library :
 numpy
