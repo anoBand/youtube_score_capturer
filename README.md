@@ -25,6 +25,7 @@ Korean comment supported. 한국어 주석 있음
 코드 파일 경로에 url 영상파일, 병합된 악보 이미지파일 저장됨  
 이미지를 Chrome 탭으로 열고 확대해서 보기를 추천합니다.
 ***
+## 코드 실행을 위해 설치 프로그램 및 라이브러리:  
 
 **essential installation :**
 ffmpeg,
@@ -36,11 +37,11 @@ yt-dlp
 
 
 
-what you should change:
-url (line 5),
+## 코드 실행을 위해 수정할 변수:  
+url (line 5),  
 tab_region_ratio (line 45)
 
-url변수에 유튜브 링크 넣고 하단 악보 나와있는 영역만큼 비율 변수 설정하면 됩니다
+url변수에 유튜브 링크 넣고 하단 악보 나와있는 영역만큼 비율 변수 설정하면 됩니다!  
 라이브러리, 프로그램 설치 방법은 구글링 하시고 질문주세요
 
 *used ai*
