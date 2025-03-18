@@ -17,7 +17,7 @@ with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 video_path = "video.mp4"
 cap = cv2.VideoCapture(video_path)
 frame_rate = 1  # 초당 1프레임씩 추출
-threshold_diff = 18  # 프레임 차이 비교 임계값
+threshold_diff = 15 # 프레임 차이 비교 임계값
 tab_region_ratio = 0.45  # 하단 몇 %를 추출할지 설정 (기본값: 45%)
 
 prev_frame = None  # 이전 프레임 저장 변수
@@ -47,8 +47,8 @@ while cap.isOpened():
     prev_frame = gray_frame
 
 # 마지막 프레임 강제 추가
-if prev_frame is not None and cropped_frame is not None:
-    frame_list.append(cropped_frame)
+# if prev_frame is not None and cropped_frame is not None:
+#     frame_list.append(cropped_frame)
 
 cap.release()
 
@@ -56,14 +56,14 @@ def extract_tab_region(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     height, width = gray.shape
     roi = gray[:, :]  # 이미 하단 부분을 받았으므로 그대로 사용
-
+    
     contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+    
     if contours:
         contours = sorted(contours, key=cv2.contourArea, reverse=True)  # 가장 큰 컨투어 선택
         x, y, w, h = cv2.boundingRect(contours[0])
         return frame[y:y + h, x:x + w]
-
+    
     return None
 
 tab_images = [extract_tab_region(frame) for frame in frame_list if extract_tab_region(frame) is not None]
@@ -78,7 +78,7 @@ def merge_images(images):
     if not images:
         print("Error: No valid images to merge.")
         return None
-
+    
     max_width = max(img.shape[1] for img in images)
     total_height = sum(img.shape[0] for img in images)
     merged_image = np.ones((total_height, max_width, 3), dtype=np.uint8) * 255
@@ -88,7 +88,7 @@ def merge_images(images):
         h, w, _ = img.shape
         merged_image[y_offset:y_offset + h, :w] = img
         y_offset += h
-
+    
     return merged_image
 
 final_image = merge_images(tab_images)
