@@ -4,7 +4,7 @@ Python 언어 사용
 
 Korean comment supported. 한국어 주석 있음
 
-최근 업데이트 03.19
+최근 주요 업데이트 03.19
 ***
 ## 추가 예정 기능
 
