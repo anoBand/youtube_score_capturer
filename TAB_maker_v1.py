@@ -41,7 +41,7 @@ while cap.isOpened():
     cropped_frame = frame[int(height * (1 - tab_region_ratio)):, :]  # 설정된 비율만큼 하단 추출
     gray_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)  # 흑백 변환
 
-    if prev_frame is not None:
+    if prev_frame:
         diff = cv2.absdiff(prev_frame, gray_frame)
         mean_diff = np.mean(diff)
 
@@ -93,7 +93,7 @@ def merge_images(images):
     return merged_image
 
 final_image = merge_images(tab_images)
-if final_image is not None:
+if final_image:
     cv2.imwrite("merged_tabs.png", final_image)
     print("Merged image saved successfully.")
 else:
@@ -128,8 +128,8 @@ def save_images_to_pdf(images, pdf_filename):
         print(f"Debug: Page {page_index + 1}, Number of images = {len(page_images)}")
         pdf.add_page()
         y_offset = 10
-        for img_index, img in enumerate(page_images):
-            temp_filename = os.path.join(temp_folder, f"temp_img_{page_index + 1}_{img_index + 1}.png")
+        for i, img in enumerate(page_images):
+            temp_filename = os.path.join(temp_folder, f"temp_img_{page_index + 1}_{i + 1}.png")
             cv2.imwrite(temp_filename, img)
             pdf.image(temp_filename, x=10, y=y_offset, w=a4_width - 20)
             y_offset += (img.shape[0] / img.shape[1]) * (a4_width - 20) + 5
