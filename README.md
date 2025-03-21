@@ -44,8 +44,8 @@ yt-dlp
 fpdf
 
 ### 수정 필요한 변수:  
-url (line 5),  
-tab_region_ratio (line 45)
+url,
+tab_region_ratio (필요시)
 
 ***
 
