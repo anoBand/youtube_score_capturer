@@ -128,8 +128,8 @@ def save_images_to_pdf(images, pdf_filename):
         print(f"Debug: Page {page_index + 1}, Number of images = {len(page_images)}")
         pdf.add_page()
         y_offset = 10
-        for img_index, img in enumerate(page_images):
-            temp_filename = os.path.join(temp_folder, f"temp_img_{page_index + 1}_{img_index + 1}.png")
+        for i, img in enumerate(page_images):
+            temp_filename = os.path.join(temp_folder, f"temp_img_{page_index + 1}_{i + 1}.png")
             cv2.imwrite(temp_filename, img)
             pdf.image(temp_filename, x=10, y=y_offset, w=a4_width - 20)
             y_offset += (img.shape[0] / img.shape[1]) * (a4_width - 20) + 5
