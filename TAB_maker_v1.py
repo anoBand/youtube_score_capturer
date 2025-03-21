@@ -71,8 +71,6 @@ tab_images = [extract_tab_region(frame) for frame in frame_list if extract_tab_r
 
 if tab_images:
     print(f"Total TAB regions found: {len(tab_images)}")
-    for i, img in enumerate(tab_images):
-        print(f"Image {i + 1}: Height = {img.shape[0]}")
 else:
     print("No valid TAB regions were detected in any frame.")
 
@@ -131,7 +129,6 @@ def save_images_to_pdf(images, pdf_filename):
         pdf.add_page()
         y_offset = 10
         for img_index, img in enumerate(page_images):
-            print(f"Debug: Adding image {img_index + 1} to Page {page_index + 1}")
             temp_filename = os.path.join(temp_folder, f"temp_img_{page_index + 1}_{img_index + 1}.png")
             cv2.imwrite(temp_filename, img)
             pdf.image(temp_filename, x=10, y=y_offset, w=a4_width - 20)
