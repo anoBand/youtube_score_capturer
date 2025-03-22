@@ -5,7 +5,18 @@ from fpdf import FPDF
 import os
 import re
 
-url = "youryoutubevideourl.com"
+############################################
+# 1) 사용자 지정 변수 (초기화)
+############################################
+# 예: 유튜브 영상 URL
+url = "youryoutubeurl.com"
+
+# 프레임 차이 비교 임계값 (중복 프레임 제거 기준)
+threshold_diff = 15
+
+# 하단 몇 %를 추출할지 설정
+tab_region_ratio = 0.18
+############################################
 
 # 유튜브 메타정보를 먼저 추출하여 제목을 얻는 함수
 def get_video_title(url):
@@ -48,8 +59,6 @@ temp_folder = os.path.join(folder_path, "temp_images")
 os.makedirs(temp_folder, exist_ok=True)
 
 cap = cv2.VideoCapture(video_path)
-threshold_diff = 15  # 프레임 차이 비교 임계값
-tab_region_ratio = 0.45  # 하단 몇 %를 추출할지 설정 (기본값: 45%)
 
 prev_frame = None  # 이전 프레임 저장 변수
 frame_list = []
