@@ -58,7 +58,9 @@ url변수에 유튜브 링크 넣고 하단 악보 나와있는 영역만큼 비
 ## 버전 별 구분
 #### 유튜브 영상 타입에 따라 v1와 v2 파일 중 하나를 사용함
 v1: 영상 시작부터 끝까지 악보가 나옴, 악보가 움직이지 않고 정적으로 표시됨, 추출할 악보가 영상 하단부에만 위치함  
+->쉽게 영상으로부터 추출 가능, 디테일한 적용 불가  
 *ex:[guitar cover with tabs&chords](https://www.youtube.com/channel/UCeWHmkuMBM760nryL8wLfLg)*  
 
 v2: 영상 인트로 또는 아웃트로가 존재함, 악보가 움직이지 않고 정적으로 표시됨, 추출할 악보 구역 지정 가능  
+->더 자세한 지정 가능하며 많은 영상에 적용 가능, 수정할 변수가 많음  
 *ex:[하루한곡](https://www.youtube.com/channel/UCKqym7WZq6J6BDJqapiinxw) 등 여러 유튜브 영상 지정 가능*
