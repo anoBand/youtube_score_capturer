@@ -1,10 +1,8 @@
-# yt-tab-img-extractor
+# Youtube Music Extractor | 유튜브 악보 추출기
 
-Python 언어 사용
-
-Korean comment supported. 한국어 주석 있음
-
-최근 주요 업데이트 03.19
+Python 언어 사용  
+Korean comment supported. 한국어 주석 있음  
+최근 주요 업데이트 03.22  
 ***
 ## 추가 예정 기능
 
@@ -17,8 +15,6 @@ Korean comment supported. 한국어 주석 있음
 #### fade식으로 전환되는 악보에도 적용 (개별파일 사용 예정)
 
 #### 일정 속도로 움직이는 악보 형식에 대해 추출
-
-#### 다른 악기의 악보 형식에도 적용
 
 #### 웹 UI로 구현해 따로 코드 파일 실행하지 않고도 기능 사용
 
@@ -58,3 +54,11 @@ y_start_percent / y_end_ percent : **위부터** 세로 몇 %부터 몇 %까지 
 url변수에 유튜브 링크 넣고 하단 악보 나와있는 영역만큼 비율 변수 설정하면 됩니다!  
 라이브러리, 프로그램 설치 방법은 구글링 하시고 질문주세요  
 그림판 - 선택 영역 도구 통해 픽셀 측정 가능 -> v2에서 start/end percent 지정에 활용하시면 편합니다.
+
+## 버전 별 구분
+#### 유튜브 영상 타입에 따라 v1와 v2 파일 중 하나를 사용함
+v1: 영상 시작부터 끝까지 악보가 나옴, 악보가 움직이지 않고 정적으로 표시됨, 추출할 악보가 영상 하단부에만 위치함  
+*ex:[guitar cover with tabs&chords](https://www.youtube.com/channel/UCeWHmkuMBM760nryL8wLfLg)*  
+
+v2: 영상 인트로 또는 아웃트로가 존재함, 악보가 움직이지 않고 정적으로 표시됨, 추출할 악보 구역 지정 가능  
+*ex:[하루한곡](https://www.youtube.com/channel/UCKqym7WZq6J6BDJqapiinxw) 등 여러 유튜브 영상 지정 가능*
