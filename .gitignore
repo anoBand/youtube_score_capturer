@@ -1,0 +1,6 @@
+venv
+.vs
+.vscode
+music_file_*
+env.py
+__pycache__
