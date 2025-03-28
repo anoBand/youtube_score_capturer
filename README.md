@@ -20,7 +20,7 @@ Korean comment supported. 한국어 주석 있음
 
 ## 실행 예시
 
-#### 영상 길이, PC성능에 따라 런타임 다를 수 있으나 1~2분정도 걸립니다.
+#### 런타임: 1~2분, 최적화 예정
 #### 정상 실행 완료 시 "PDF saved successfully as music_file_(번호)\output.pdf" 출력되니 확인하시면 됩니다.
 ![image](https://github.com/user-attachments/assets/ccbcd56e-1616-43c4-b373-f48b0e5761dc)
 ![image](https://github.com/user-attachments/assets/897fac09-e3fd-4334-8ced-810092198fd0)
