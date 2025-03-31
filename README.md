@@ -18,6 +18,7 @@ Korean comment supported. 한국어 주석 있음
 - [ ] fade, push 방식으로 전환되는 악보에도 적용 (v3 예정)
 - [ ] exe파일 생성해 따로 코드 편집기, python 라이브러리 설치하지 않고도 기능 사용 - Tkinter
   - [ ] ffmpeg 파일 내장
+  - [ ] env.py 자동 생성하여 gui 내에서 입력 받는 로직
   - [ ] start/end percent 입력 도움(해당픽셀/전체 해상도)
   - [ ] 터미널 결과 출력, 실행 완료 시 파일 열기 등 편의성
 
