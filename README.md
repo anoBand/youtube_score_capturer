@@ -4,7 +4,7 @@
 
 Python 언어 사용  
 Korean comment supported. 한국어 주석 있음  
-최근 주요 업데이트 03.27
+최근 주요 업데이트 03.31
 
 ***
 
@@ -14,9 +14,8 @@ Korean comment supported. 한국어 주석 있음
 - [X] 실행마다 영상 제목으로 폴더 생성 후 내부에 영상 파일, pdf파일, 이미지 파일 저장
 - [X] 악보 이미지 구역 설정 기능 : 가로 a% to b%, 세로 x% to y%
 - [X] start_time, end_time에 mm:ss식으로 작성된 시간 적용
-- [ ] float로 입력하는 걸 직관적으로 % 스타일로 입력
-- [ ] fade식으로 전환되는 악보에도 적용 (개별파일 사용 예정)
-- [ ] 일정 속도로 움직이는 악보 형식에 대해 추출
+- [X] float로 입력하는 걸 직관적으로 % 스타일로 입력
+- [ ] fade, push 방식으로 전환되는 악보에도 적용 (v3 예정)
 - [ ] 웹 UI로 구현해 따로 코드 파일 실행하지 않고도 기능 사용
   - [ ] start/end percent 입력 도움(해당픽셀/전체 해상도)
 
@@ -63,13 +62,12 @@ END_TIME_RAW:   Optional[str] = None #mm:ss 형식 입력 가능 (기본 영상 
 # 프레임 비교 임계값(중복 제거)
 THRESHOLD_DIFF: float = 5
 
-# 잘라낼 영역 퍼센트(0.0 ~ 1.0 사이)
-# 기본값: 전체 화면(0.0~1.0)
-X_START_PERCENT: float = 0
-X_END_PERCENT: float   = 0.65
-Y_START_PERCENT: float = 0.7
-Y_END_PERCENT: float   = 0.9728
-
+# 잘라낼 영역 퍼센트(0% ~ 100%) RAW에서 입력
+# v2 파일 메인 코드에서 소수로 변환
+X_START_PERCENT_RAW: float = 0
+X_END_PERCENT_RAW: float   = 65
+Y_START_PERCENT_RAW: float = 70
+Y_END_PERCENT_RAW: float   = 97
 
 # 출력 폴더명 접두어
 BASE_FOLDER_NAME: str = "music_file_"
