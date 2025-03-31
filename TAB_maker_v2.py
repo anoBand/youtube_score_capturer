@@ -11,7 +11,7 @@ import yt_dlp
 import numpy as np
 from fpdf import FPDF
 # 2) env.py 파일로부터 상수 가져오기
-from env import URL, START_TIME_RAW, END_TIME_RAW, THRESHOLD_DIFF, X_START_PERCENT, X_END_PERCENT, Y_START_PERCENT, Y_END_PERCENT, BASE_FOLDER_NAME
+from env import URL, START_TIME_RAW, END_TIME_RAW, THRESHOLD_DIFF, X_START_PERCENT_RAW, X_END_PERCENT_RAW, Y_START_PERCENT_RAW, Y_END_PERCENT_RAW, BASE_FOLDER_NAME
 
 
 ############################################
@@ -158,6 +158,11 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
 ############################################
 START_TIME= parse_time(START_TIME_RAW)
 END_TIME= parse_time(END_TIME_RAW)
+
+X_START_PERCENT: float = X_START_PERCENT_RAW/100
+X_END_PERCENT: float   = X_END_PERCENT_RAW/100
+Y_START_PERCENT: float = Y_START_PERCENT_RAW/100
+Y_END_PERCENT: float   = Y_END_PERCENT_RAW/100
 
 if __name__ == "__main__":
     # 1) 결과 저장할 폴더 생성
