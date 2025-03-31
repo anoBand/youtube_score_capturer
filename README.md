@@ -18,7 +18,7 @@ Korean comment supported. 한국어 주석 있음
 - [ ] fade식으로 전환되는 악보에도 적용 (개별파일 사용 예정)
 - [ ] 일정 속도로 움직이는 악보 형식에 대해 추출
 - [ ] 웹 UI로 구현해 따로 코드 파일 실행하지 않고도 기능 사용
-  - [ ] start/end percent 입력 도움
+  - [ ] start/end percent 입력 도움(해당픽셀/전체 해상도)
 
 ## 실행 예시
 
