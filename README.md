@@ -52,20 +52,20 @@ Korean comment supported. 한국어 주석 있음
 **중요: v2부터는 아래와 같은 env.py 파일을 직접 만들어주어야 합니다.**
 ```python
 from typing import Optional, List
-URL: str = "https://www.youtube.com/watch?v=Q472DsHkTOU"
+URL: str = "https://youtu.be/6JLXenv6yGU?si=2ftfs7IjqO6_Nddo"
 
 # 동영상 분석 구간 (초 단위)
-START_TIME: float = 0      # 0초부터 (기본값)
-END_TIME: Optional[float] = None   # None이면 영상 끝까지 (예: 30.0 등으로 지정 가능)
+START_TIME_RAW: Optional[str] = "0" #정수 입력 시 초로 인식 (기본 처음부터)
+END_TIME_RAW:   Optional[str] = None #mm:ss 형식 입력 가능 (기본 영상 끝까지)
 
 # 프레임 비교 임계값(중복 제거)
 THRESHOLD_DIFF: float = 5
 
 # 잘라낼 영역 퍼센트(0.0 ~ 1.0 사이)
 # 기본값: 전체 화면(0.0~1.0)
-X_START_PERCENT: float = 0.2685
-X_END_PERCENT: float   = 0.7282
-Y_START_PERCENT: float = 0.4645
+X_START_PERCENT: float = 0
+X_END_PERCENT: float   = 0.65
+Y_START_PERCENT: float = 0.7
 Y_END_PERCENT: float   = 0.9728
 
 
