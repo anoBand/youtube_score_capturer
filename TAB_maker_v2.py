@@ -7,16 +7,45 @@ import re
 from typing import Optional, List
 # 외장 라이브러리
 import cv2
-import yt_dlp
+import yt_dlp   
 import numpy as np
 from fpdf import FPDF
 # 2) env.py 파일로부터 상수 가져오기
-from env import URL, START_TIME, END_TIME, THRESHOLD_DIFF, X_START_PERCENT, X_END_PERCENT, Y_START_PERCENT, Y_END_PERCENT, BASE_FOLDER_NAME
+from env import URL, START_TIME_RAW, END_TIME_RAW, THRESHOLD_DIFF, X_START_PERCENT, X_END_PERCENT, Y_START_PERCENT, Y_END_PERCENT, BASE_FOLDER_NAME
 
 
 ############################################
 # 3) 함수 선언
 ############################################
+
+def parse_time(value: Optional[str]) -> Optional[float]:
+    """
+    None -> None
+    정수/실수 형태 -> float(초)
+    'mm:ss' 형태 -> (mm * 60 + ss)
+    공백/잘못된 형태 -> ValueError
+    """
+    if value is None:
+        return None
+    
+    value = value.strip()
+    if not value:
+        return None
+
+    # 'mm:ss' 형태인지 확인
+    if ':' in value:
+        parts = value.split(':')
+        if len(parts) == 2:
+            mm_str, ss_str = parts
+            mm = float(mm_str)
+            ss = float(ss_str)
+            return mm * 60 + ss
+        else:
+            raise ValueError(f"Invalid time format: {value}")
+    
+    # ':'가 없으면 정수/실수로 인식
+    return float(value)
+
 def download_youtube_video(url: str, folder_path: str) -> str:
     """
     유튜브 영상을 지정 폴더에 다운로드 후, 저장된 파일 경로를 반환한다.
@@ -127,6 +156,9 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
 ############################################
 # 4) 메인 코드
 ############################################
+START_TIME= parse_time(START_TIME_RAW)
+END_TIME= parse_time(END_TIME_RAW)
+
 if __name__ == "__main__":
     # 1) 결과 저장할 폴더 생성
     counter: int = 1
