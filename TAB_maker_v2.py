@@ -7,15 +7,21 @@ import re
 from typing import Optional, List
 # 외장 라이브러리
 import cv2
-import yt_dlp   
+import yt_dlp
 import numpy as np
 from fpdf import FPDF
-# 2) env.py 파일로부터 상수 가져오기
-from env import URL, START_TIME_RAW, END_TIME_RAW, THRESHOLD_DIFF, X_START_PERCENT_RAW, X_END_PERCENT_RAW, Y_START_PERCENT_RAW, Y_END_PERCENT_RAW, BASE_FOLDER_NAME
 
+# env.py 파일에서 상수 불러오기
+from env import (
+    URL, START_TIME_RAW, END_TIME_RAW,
+    THRESHOLD_DIFF,
+    X_START_PERCENT_RAW, X_END_PERCENT_RAW,
+    Y_START_PERCENT_RAW, Y_END_PERCENT_RAW,
+    BASE_FOLDER_NAME
+)
 
 ############################################
-# 3) 함수 선언
+# 2) 함수 선언
 ############################################
 
 def parse_time(value: Optional[str]) -> Optional[float]:
@@ -63,7 +69,6 @@ def download_youtube_video(url: str, folder_path: str) -> str:
         ydl.download([url])
     return output_path
 
-
 def extract_tab_region(frame: np.ndarray) -> Optional[np.ndarray]:
     """
     프레임에서 가장 큰 컨투어 영역(가령 악보 TAB)을 찾아 잘라낸다.
@@ -78,29 +83,6 @@ def extract_tab_region(frame: np.ndarray) -> Optional[np.ndarray]:
         x, y, w, h = cv2.boundingRect(contours[0])
         return frame[y:y + h, x:x + w]
     return None
-
-
-def merge_images(images: List[np.ndarray]) -> Optional[np.ndarray]:
-    """
-    여러 이미지를 세로 방향으로 이어 붙여 하나의 이미지로 만든다.
-    """
-    valid_images: List[np.ndarray] = [img for img in images if img is not None and img.size > 0]
-    if not valid_images:
-        print("Error: No valid images to merge.")
-        return None
-
-    max_width: int = max(img.shape[1] for img in valid_images)
-    total_height: int = sum(img.shape[0] for img in valid_images)
-    merged_image: np.ndarray = np.ones((total_height, max_width, 3), dtype=np.uint8) * 255  # 흰 배경
-
-    y_offset: int = 0
-    for img in valid_images:
-        h, w, _ = img.shape
-        merged_image[y_offset:y_offset + h, :w] = img
-        y_offset += h
-
-    return merged_image
-
 
 def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder: str) -> None:
     """
@@ -123,9 +105,7 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
     current_height: float = 0
     current_page_images: List[np.ndarray] = []
 
-    # 이미지 높이를 계산하여, 페이지에 적절히 배치
     for img in images:
-        # A4 폭 대비 이미지 높이 비율 계산
         img_height: float = (img.shape[0] / img.shape[1]) * a4_width
         if current_height + img_height > a4_height:
             merged_tab_images.append(current_page_images)
@@ -134,7 +114,6 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
         current_page_images.append(img)
         current_height += img_height
 
-    # 남은 이미지가 있으면 마지막 페이지에 배치
     if current_page_images:
         merged_tab_images.append(current_page_images)
 
@@ -152,20 +131,24 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
     pdf.output(pdf_filename)
     print(f"PDF saved successfully as {pdf_filename}")
 
-
 ############################################
-# 4) 메인 코드
+# 3) 메인 코드
 ############################################
-START_TIME= parse_time(START_TIME_RAW)
-END_TIME= parse_time(END_TIME_RAW)
 
-X_START_PERCENT: float = X_START_PERCENT_RAW/100
-X_END_PERCENT: float   = X_END_PERCENT_RAW/100
-Y_START_PERCENT: float = Y_START_PERCENT_RAW/100
-Y_END_PERCENT: float   = Y_END_PERCENT_RAW/100
+# 3-1) 입력값 변환
+START_TIME = parse_time(START_TIME_RAW)
+END_TIME   = parse_time(END_TIME_RAW)
+
+# 퍼센트도 "정수" 입력받았으므로 100으로 나눠서 0.x 형태로
+X_START_PERCENT: float = X_START_PERCENT_RAW / 100
+X_END_PERCENT:   float = X_END_PERCENT_RAW   / 100
+Y_START_PERCENT: float = Y_START_PERCENT_RAW / 100
+Y_END_PERCENT:   float = Y_END_PERCENT_RAW   / 100
 
 if __name__ == "__main__":
-    # 1) 결과 저장할 폴더 생성
+    ############################################
+    # 4) 결과 저장할 폴더 생성
+    ############################################
     counter: int = 1
     while True:
         folder_path: str = f"{BASE_FOLDER_NAME}{counter}"
@@ -175,32 +158,38 @@ if __name__ == "__main__":
         counter += 1
     print(f"'{folder_path}' 디렉토리가 준비되었습니다.")
 
-    # 2) 유튜브 영상 다운로드
+    # 5) 유튜브 영상 다운로드
     video_path: str = download_youtube_video(URL, folder_path)
 
-    # 3) 임시 이미지 저장 폴더 생성
+    # 6) 임시 이미지 저장 폴더 생성
     temp_folder: str = os.path.join(folder_path, "temp_images")
     os.makedirs(temp_folder, exist_ok=True)
 
-    # 4) 비디오 정보 가져오기
+    ############################################
+    # 7) 비디오 정보 가져오기
+    ############################################
     cap: cv2.VideoCapture = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print("에러: 비디오 파일을 열 수 없습니다.")
         exit(1)
+
     fps: float = cap.get(cv2.CAP_PROP_FPS)
     total_frames: float = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     video_duration: float = total_frames / fps if fps else 0.0
 
-    # END_TIME이 None이거나 영상 길이를 넘어가면 영상 끝까지로 설정
+    # END_TIME이 None이거나 영상 길이를 넘어가면 영상 끝까지
     modified_end_time: float = END_TIME if (END_TIME and END_TIME < video_duration) else video_duration
 
     # START_TIME 위치로 이동 (밀리초 기준)
-    if START_TIME > 0:
+    if START_TIME and START_TIME > 0:
         cap.set(cv2.CAP_PROP_POS_MSEC, START_TIME * 1000)
+
     prev_frame: Optional[np.ndarray] = None
     frame_list: List[np.ndarray] = []
 
-    # 5) 프레임 추출 (START_TIME ~ modified_end_time)
+    ############################################
+    # 8) 프레임 추출 (START_TIME ~ modified_end_time)
+    ############################################
     while True:
         current_pos_sec: float = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
         if current_pos_sec > modified_end_time:
@@ -214,12 +203,12 @@ if __name__ == "__main__":
 
         # 사용자 지정 영역(percent)만큼 크롭
         x_start: int = int(width  * X_START_PERCENT)
-        x_end: int   = int(width  * X_END_PERCENT)
+        x_end:   int = int(width  * X_END_PERCENT)
         y_start: int = int(height * Y_START_PERCENT)
-        y_end: int   = int(height * Y_END_PERCENT)
+        y_end:   int = int(height * Y_END_PERCENT)
 
         cropped_frame: np.ndarray = frame[y_start:y_end, x_start:x_end]
-        gray_frame: np.ndarray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
+        gray_frame:    np.ndarray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
 
         # (중복 제거) 이전 프레임과 비교
         if prev_frame is not None:
@@ -233,28 +222,14 @@ if __name__ == "__main__":
 
     cap.release()
 
-    # 6) TAB(악보) 영역 추출
+    # 9) TAB(악보) 영역 추출
     tab_images: List[np.ndarray] = []
     for f in frame_list:
         tab_region: Optional[np.ndarray] = extract_tab_region(f)
         if tab_region is not None:
             tab_images.append(tab_region)
 
-    if tab_images:
-        print(f"총 TAB 영역: {len(tab_images)}")
-    else:
-        print("TAB 영역을 찾을 수 없습니다.")
 
-    # 7) 이미지 병합
-    final_image: Optional[np.ndarray] = merge_images(tab_images)
-    merged_image_path: str = os.path.join(folder_path, "merged_tabs.png")
-
-    if final_image is not None:
-        cv2.imwrite(merged_image_path, final_image)
-        print("이미지 저장 완료:", merged_image_path)
-    else:
-        print("이미지 병합 실패.")
-
-    # 8) PDF로 저장
+    # 10) PDF로 저장
     pdf_output_path: str = os.path.join(folder_path, "output.pdf")
     save_images_to_pdf(tab_images, pdf_output_path, temp_folder)
