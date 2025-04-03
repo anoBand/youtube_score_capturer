@@ -5,18 +5,7 @@ from fpdf import FPDF
 import os
 import re
 
-############################################
-# 1) 사용자 지정 변수 (초기화)
-############################################
-# 예: 유튜브 영상 URL
-url = "youryoutubeurl.com"
-
-# 프레임 차이 비교 임계값 (중복 프레임 제거 기준)
-threshold_diff = 15
-
-# 하단 몇 %를 추출할지 설정
-tab_region_ratio = 0.18
-############################################
+from env import URL, THRESHOLD_DIFF, TAB_REGION_RATIO
 
 # 유튜브 메타정보를 먼저 추출하여 제목을 얻는 함수
 def get_video_title(url):
@@ -45,14 +34,14 @@ def download_youtube_video(url, folder_path):
     return output_path
 
 # 1) 동영상 제목을 폴더명으로 만들고 폴더 생성
-video_title = get_video_title(url)
+video_title = get_video_title(URL)
 folder_path = video_title
 
 if not os.path.exists(folder_path):
     os.makedirs(folder_path, exist_ok=True)
 
 # 2) 폴더 내부에 동영상 다운로드
-video_path = download_youtube_video(url, folder_path)
+video_path = download_youtube_video(URL, folder_path)
 
 # 3) 임시 이미지 저장 폴더도 해당 폴더 내부에 생성
 temp_folder = os.path.join(folder_path, "temp_images")
@@ -75,14 +64,14 @@ while cap.isOpened():
 
     height, width = frame.shape[:2]
     # 설정된 비율만큼 하단 부분만 추출
-    cropped_frame = frame[int(height * (1 - tab_region_ratio)):, :]
+    cropped_frame = frame[int(height * (1 - TAB_REGION_RATIO)):, :]
     gray_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)  # 흑백 변환
 
     if prev_frame is not None:
         diff = cv2.absdiff(prev_frame, gray_frame)
         mean_diff = np.mean(diff)
 
-        if mean_diff < threshold_diff:
+        if mean_diff < THRESHOLD_DIFF:
             continue
 
     frame_list.append(cropped_frame)
