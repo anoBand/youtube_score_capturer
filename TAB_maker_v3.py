@@ -17,7 +17,7 @@ from env import (
     THRESHOLD_DIFF,
     X_START_PERCENT_RAW, X_END_PERCENT_RAW,
     Y_START_PERCENT_RAW, Y_END_PERCENT_RAW,
-    TRANSITION_STABLE_SEC,
+    TRANSITION_STABLE_SEC,  # 2초 이상의 안정 구간
     BASE_FOLDER_NAME
 )
 
@@ -67,7 +67,9 @@ def download_youtube_video(url: str, folder_path: str) -> str:
         }]
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        print("Downloading video from YouTube... (yt_dlp)")
         ydl.download([url])
+    print("Download complete:", output_path)
     return output_path
 
 def extract_tab_region(frame: np.ndarray) -> Optional[np.ndarray]:
@@ -182,9 +184,11 @@ if __name__ == "__main__":
     fps: float = cap.get(cv2.CAP_PROP_FPS)
     total_frames: float = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     video_duration: float = total_frames / fps if fps else 0.0
+    print(f"Video duration: {video_duration:.2f} sec, FPS: {fps:.2f}")
 
     # END_TIME이 None이거나 영상 길이를 넘어가면 영상 끝까지
     modified_end_time: float = END_TIME if (END_TIME and END_TIME < video_duration) else video_duration
+    print(f"Analyzing frames from {START_TIME or 0:.2f}s to {modified_end_time:.2f}s")
 
     # START_TIME 위치로 이동 (밀리초 기준)
     if START_TIME and START_TIME > 0:
@@ -196,6 +200,9 @@ if __name__ == "__main__":
     ############################################
     # 8) 프레임 추출 (START_TIME ~ modified_end_time)
     ############################################
+    frame_count: int = 0
+    PRINT_INTERVAL = 90  # 90프레임마다 출력
+
     while True:
         current_pos_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
         if current_pos_sec > modified_end_time:
@@ -208,9 +215,14 @@ if __name__ == "__main__":
         # dt(현재 프레임 ~ 이전 프레임 시간차) 계산
         dt = current_pos_sec - last_pos_sec
         last_pos_sec = current_pos_sec
+        frame_count += 1
+
+        # 90프레임마다 한 번만 진행상황 출력
+        if frame_count % PRINT_INTERVAL == 0:
+            print(f"[Frame Extraction] Processed {frame_count} frames... (stable_time={stable_time:.2f}, in_transition={is_in_transition})")
+
         height, width = frame.shape[:2]
 
-        # 사용자 지정 영역(percent)만큼 크롭
         x_start: int = int(width  * X_START_PERCENT)
         x_end:   int = int(width  * X_END_PERCENT)
         y_start: int = int(height * Y_START_PERCENT)
@@ -224,33 +236,29 @@ if __name__ == "__main__":
             mean_diff = float(np.mean(diff))
 
             # [1] 화면이 많이 변하면(전환 중) => stable_time 초기화
-            #     'is_in_transition' 상태가 True
             if mean_diff > THRESHOLD_DIFF:
                 is_in_transition = True
                 stable_time = 0.0
-
             else:
-                # [2] 변화가 작으면 => 안정화 구간 누적
+                # [2] 작은 변화 => 안정 구간 누적
                 if is_in_transition:
                     stable_time += dt
                     # 2초 이상 안정이면 "전환 완료"로 판단
                     if stable_time >= TRANSITION_STABLE_SEC:
-                        # -> 이 시점 프레임을 채택
                         frame_list.append(cropped_frame)
                         is_in_transition = False
                 else:
-                    # 이미 안정 상태라면 별도 처리 X
+                    # 이미 안정 상태
                     pass
-
         else:
-            # 첫 프레임은 일단 저장하거나, 또는 무시
-            # 여기서는 "첫 악보"라 보고 한번 추가해도 됨
+            # 첫 프레임은 초기 악보라 보고 추가 가능
             frame_list.append(cropped_frame)
 
         prev_frame = gray_frame
 
     cap.release()
 
+    print(f"Frame loop finished. Total frames read: {frame_count}, final collected frames: {len(frame_list)}")
 
     # 9) TAB(악보) 영역 추출
     tab_images: List[np.ndarray] = []
@@ -259,7 +267,10 @@ if __name__ == "__main__":
         if tab_region is not None:
             tab_images.append(tab_region)
 
+    print(f"Total TAB regions found: {len(tab_images)}")
 
     # 10) PDF로 저장
     pdf_output_path: str = os.path.join(folder_path, "output.pdf")
     save_images_to_pdf(tab_images, pdf_output_path, temp_folder)
+
+    print("All done!")
