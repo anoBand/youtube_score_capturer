@@ -5,7 +5,6 @@
 import os
 import re
 from typing import Optional, List
-# 외장 라이브러리
 import cv2
 import yt_dlp
 import numpy as np
@@ -33,7 +32,7 @@ def parse_time(value: Optional[str]) -> Optional[float]:
     """
     if value is None:
         return None
-    
+
     value = value.strip()
     if not value:
         return None
@@ -48,7 +47,7 @@ def parse_time(value: Optional[str]) -> Optional[float]:
             return mm * 60 + ss
         else:
             raise ValueError(f"Invalid time format: {value}")
-    
+
     # ':'가 없으면 정수/실수로 인식
     return float(value)
 
@@ -66,7 +65,9 @@ def download_youtube_video(url: str, folder_path: str) -> str:
         }]
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        print("Downloading video from YouTube... (yt_dlp)")
         ydl.download([url])
+    print("Download complete:", output_path)
     return output_path
 
 def extract_tab_region(frame: np.ndarray) -> Optional[np.ndarray]:
@@ -98,7 +99,7 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
 
     # A4 크기(mm)
     a4_width: float = 210
-    a4_height: float = 297  
+    a4_height: float = 297
 
     # 페이지 단위로 이미지를 모아두는 변수들
     merged_tab_images: List[List[np.ndarray]] = []
@@ -119,7 +120,7 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
 
     # 페이지별로 PDF에 삽입
     for page_index, page_images in enumerate(merged_tab_images):
-        print(f"Debug: Page {page_index + 1}, Number of images = {len(page_images)}")
+        print(f"PDF - Page {page_index + 1}/{len(merged_tab_images)} with {len(page_images)} images.")
         pdf.add_page()
         y_offset: float = 10
         for i, img in enumerate(page_images):
@@ -176,9 +177,11 @@ if __name__ == "__main__":
     fps: float = cap.get(cv2.CAP_PROP_FPS)
     total_frames: float = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     video_duration: float = total_frames / fps if fps else 0.0
+    print(f"Video duration: {video_duration:.2f} sec, FPS: {fps:.2f}")
 
     # END_TIME이 None이거나 영상 길이를 넘어가면 영상 끝까지
     modified_end_time: float = END_TIME if (END_TIME and END_TIME < video_duration) else video_duration
+    print(f"Analyzing frames from {START_TIME or 0:.2f}s to {modified_end_time:.2f}s")
 
     # START_TIME 위치로 이동 (밀리초 기준)
     if START_TIME and START_TIME > 0:
@@ -190,6 +193,11 @@ if __name__ == "__main__":
     ############################################
     # 8) 프레임 추출 (START_TIME ~ modified_end_time)
     ############################################
+    frame_count: int = 0
+    saved_count: int = 0
+
+    PRINT_INTERVAL = 90  # 30프레임마다 진행 상황 표시
+
     while True:
         current_pos_sec: float = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
         if current_pos_sec > modified_end_time:
@@ -198,6 +206,11 @@ if __name__ == "__main__":
         success, frame = cap.read()
         if not success:
             break
+
+        frame_count += 1
+        if frame_count % PRINT_INTERVAL == 0:
+            # 대략적인 진행 상황 안내
+            print(f"[Frame Extraction] Processed {frame_count} frames so far... (saved={saved_count})")
 
         height, width = frame.shape[:2]
 
@@ -218,18 +231,28 @@ if __name__ == "__main__":
                 continue
 
         frame_list.append(cropped_frame)
+        saved_count += 1
         prev_frame = gray_frame
 
     cap.release()
+    print(f"Frame extraction complete: total processed={frame_count}, kept={saved_count}")
 
     # 9) TAB(악보) 영역 추출
     tab_images: List[np.ndarray] = []
-    for f in frame_list:
+    PRINT_INTERVAL_TAB = max(1, len(frame_list)//10)  # 1/10 간격 또는 최소 1
+    for i, f in enumerate(frame_list):
+        # 10%마다 진행 상황 안내
+        if (i+1) % PRINT_INTERVAL_TAB == 0:
+            print(f"[Tab Extraction] {i+1}/{len(frame_list)} frames processed...")
+
         tab_region: Optional[np.ndarray] = extract_tab_region(f)
         if tab_region is not None:
             tab_images.append(tab_region)
 
+    print(f"Total extracted TAB images: {len(tab_images)}")
 
     # 10) PDF로 저장
     pdf_output_path: str = os.path.join(folder_path, "output.pdf")
     save_images_to_pdf(tab_images, pdf_output_path, temp_folder)
+
+    print("All done!")
