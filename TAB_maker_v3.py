@@ -10,6 +10,7 @@ import cv2
 import yt_dlp
 import numpy as np
 from fpdf import FPDF
+import sys
 
 # env.py 파일에서 상수 불러오기
 from env import (
@@ -56,11 +57,18 @@ def parse_time(value: Optional[str]) -> Optional[float]:
 def download_youtube_video(url: str, folder_path: str) -> str:
     """
     유튜브 영상을 지정 폴더에 다운로드 후, 저장된 파일 경로를 반환한다.
+    같은 폴더의 ffmpeg.exe를 사용한다.
     """
     output_path: str = os.path.join(folder_path, "video.mp4")
+    
+    # 현재 실행 파일(gui.exe 또는 .py)이 위치한 폴더를 기준으로 ffmpeg 경로 지정
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    ffmpeg_path = os.path.join(base_dir, "ffmpeg.exe")
+
     ydl_opts: dict = {
         "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
         "outtmpl": output_path,
+        "ffmpeg_location": ffmpeg_path,  # ← 여기에 추가
         "postprocessors": [{
             "key": "FFmpegVideoConvertor",
             "preferedformat": "mp4"
@@ -155,24 +163,27 @@ Y_END_PERCENT:   float = Y_END_PERCENT_RAW   / 100
 
 if __name__ == "__main__":
     ############################################
-    # 4) 결과 저장할 폴더 생성
+    # 4) 결과 저장할 폴더 생성 (상위 폴더에 생성)
     ############################################
-    counter: int = 1
+    base_dir = os.getcwd()
+    parent_dir = os.path.dirname(base_dir)  # src의 상위 폴더 (실제 위치)
+
+    counter = 1
     while True:
-        folder_path: str = f"{BASE_FOLDER_NAME}{counter}"
+        folder_path = os.path.join(parent_dir, f"{BASE_FOLDER_NAME}{counter}")
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
             break
         counter += 1
     print(f"'{folder_path}' 디렉토리가 준비되었습니다.")
-
-    # 5) 유튜브 영상 다운로드
     video_path: str = download_youtube_video(URL, folder_path)
 
-    # 6) 임시 이미지 저장 폴더 생성
     temp_folder: str = os.path.join(folder_path, "temp_images")
     os.makedirs(temp_folder, exist_ok=True)
+    video_path: str = download_youtube_video(URL, folder_path)
 
+    temp_folder: str = os.path.join(folder_path, "temp_images")
+    os.makedirs(temp_folder, exist_ok=True)
     ############################################
     # 7) 비디오 정보 가져오기
     ############################################
