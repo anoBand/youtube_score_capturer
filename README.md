@@ -78,32 +78,36 @@
 
 ---
 
-## 실행 예시
-> ![image](https://github.com/user-attachments/assets/f4e04e95-4880-419f-8e33-bd49b66822ca)
-> ![image](https://github.com/user-attachments/assets/93f570df-3011-4ecb-992c-4367193782ba)
-> ![guide](https://github.com/user-attachments/assets/30da0df6-a2dc-4185-8854-b9728e34141f)
-
-
-파일 경로에 url 영상파일, 병합된 악보 PDF파일 저장됨  
-temp_images 파일은 임시 저장용 폴더이므로, 사용하지 않으면 됩니다.  
-
-***
-
-### 수정 필요한 변수:  
-> 이제 URL과 버전 별 입력란을 입력 후 실행 파일을 선택 후, 버튼을 누르면 실행됩니다.  
-
----
-
 ## 버전 별 구분
 #### 유튜브 영상 타입에 따라 v1와 v2, v3 파일 중 하나를 사용함
-**v1**: 영상 시작부터 끝까지 악보가 나옴, 악보가 움직이지 않고 정적으로 표시됨, **추출할 악보가 영상 하단부에만 위치함**  
+ **v1**: 영상 시작부터 끝까지 악보가 나옴, 악보가 움직이지 않고 정적으로 표시됨, **추출할 악보가 영상 하단부에만 위치함**  
 ->쉽게 영상으로부터 추출 가능, 디테일한 적용 불가  
 *ex:[guitar cover with tabs&chords](https://www.youtube.com/channel/UCeWHmkuMBM760nryL8wLfLg)*  
+> ![31](https://github.com/user-attachments/assets/1a92af92-7eab-4df2-ba92-0b5fa8ed8384)
 
 **v2**: 영상 인트로 또는 아웃트로가 존재함, 악보가 움직이지 않고 정적으로 표시됨, **추출할 악보 구역 지정 가능**  
 ->더 자세한 지정 가능하며 많은 영상에 적용 가능, 수정할 변수가 많음  
 *ex:[하루한곡](https://www.youtube.com/channel/UCKqym7WZq6J6BDJqapiinxw) 등 여러 유튜브 영상 지정 가능*
+> ![32](https://github.com/user-attachments/assets/2684f5ff-cd06-4904-9f5b-9c7317a6936e)
 
-**v3**: 영상 인트로 또는 아웃트로가 존재함, **악보가 넘어갈때마다 fade 또는 push 방식으로 움직임** , 추출할 악보 구역 지정 가능  
+
+
+ **v3**: 영상 인트로 또는 아웃트로가 존재함, **악보가 넘어갈때마다 fade 또는 push 방식으로 움직임** , 추출할 악보 구역 지정 가능  
 ->더 자세한 지정 가능하며 많은 영상에 적용 가능, 수정할 변수가 많음  
 *ex:[Mr.tabs](https://youtu.be/x_NGsTIJptw?si=wKx17EWYK5Fol0Nr) 등 대부분의 유튜브 영상 악보 추출 가능*
+> ![33](https://github.com/user-attachments/assets/36f2f306-b7fa-4f61-b72d-2af8630ec3c9)
+
+---
+
+
+## 실행 예시
+> ![image](https://github.com/user-attachments/assets/93f570df-3011-4ecb-992c-4367193782ba)  
+
+
+https://github.com/user-attachments/assets/0d543e94-0aea-49ac-9fae-18fc0d717135
+
+
+
+* 추출 영역(%) 지정 시 그림판 좌하단의 커서 px 모니터링 활용 시 편리함  
+* 파일 경로에 url 영상파일, 병합된 악보 PDF파일 저장됨  
+* temp_images 파일은 임시 저장용 폴더이므로, 사용하지 않으면 됩니다.  
