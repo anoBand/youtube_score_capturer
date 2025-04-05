@@ -1,6 +1,6 @@
 # Youtube Music Extractor | 유튜브 악보 추출기
 
-> **중요: [이제 v2 및 v3을 실행하기 위해 env.py를 생성해야 합니다.](#수정-필요한-변수v2/v3)**
+> **중요: Extractor.zip를 다운받고 압축 해제 후 gui.exe를 실행하세요.**
 
 Python 언어 사용  
 Korean comment supported. 한국어 주석 있음  
@@ -44,19 +44,11 @@ temp_images 파일은 임시 저장용 폴더이므로, 사용하지 않으면 �
 * [python3](https://www.python.org/)  
 
 **[essential library :](./requirements.txt)**
-* numpy
-* opencv
-* yt-dlp
-* fpdf
+* 이제 .exe 파일 사용으로 인해 별도 라이브러리 다운이 필요하지 않음
 
 ### 수정 필요한 변수:  
+> 이제 URL과 버전 별 필수 입력란(*으로 표시됨)을 입력 후 실행 파일을 선택 후, 버튼을 누르면 실행됩니다.
 > 
-* url,  
-* tab_region_ratio
-
-> url변수에 유튜브 링크 넣고 하단 악보 나와있는 영역만큼 비율 변수 설정하면 됩니다  
-> 그림판 - 선택 영역 도구 또는 마우스 커서 통해 픽셀 측정 가능 -> tab region ratio 또는 start/end percent 지정에 활용하시면 편합니다.
-
 ## 버전 별 구분
 #### 유튜브 영상 타입에 따라 v1와 v2 파일 중 하나를 사용함
 **v1**: 영상 시작부터 끝까지 악보가 나옴, 악보가 움직이지 않고 정적으로 표시됨, 추출할 악보가 영상 하단부에만 위치함  
