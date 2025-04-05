@@ -1,6 +1,9 @@
+import os
+import sys
 import tkinter as tk
 from tkinter import messagebox
 import subprocess
+from PIL import Image, ImageTk
 
 def generate_env_py(
     url: str,
@@ -49,14 +52,16 @@ BASE_FOLDER_NAME: str = "{base_folder_name}"
 def run_selected_py():
     """선택된 파일을 CMD 창에서 실행"""
     selected = radio_var.get()
-
     if not selected:
         messagebox.showerror("오류", "실행할 파일을 선택하세요!")
         return
 
-    # Windows cmd 창 열기 → 끝나도 닫히지 않도록 /k
-    # python X.py 실행
-    subprocess.Popen(["cmd", "/k", "python", f"{selected}.py"])
+    # 현재 gui.py 폴더를 PATH에 우선 추가 → ffmpeg.exe를 찾기 위함
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    new_env = dict(os.environ)
+    new_env["PATH"] = base_dir + os.pathsep + new_env["PATH"]
+
+    subprocess.Popen(["cmd", "/k", "python", f"{selected}.py"], env=new_env)
 
 def save_env():
     # 입력값 가져오기
@@ -81,7 +86,6 @@ def save_env():
         y_start_val = float(y_start) if y_start else 70.0
         y_end_val = float(y_end) if y_end else 100.0
         transition_val = float(transition_sec) if transition_sec else 2.0
-
     except ValueError:
         messagebox.showerror("오류", "숫자형 변환이 필요한 값들 중 잘못된 입력이 있습니다.")
         return
@@ -106,94 +110,138 @@ def save_env():
 
     messagebox.showinfo("저장 완료", "env.py가 성공적으로 생성/갱신되었습니다!")
 
+# 간단한 계산: (분자 / 분모) → XX.XX% 표시
+def calc_ratio():
+    """entry_numer, entry_denom에서 값을 가져와 % 계산"""
+    try:
+        numerator = float(entry_numer.get())
+        denominator = float(entry_denom.get())
 
-# 간단한 Tkinter GUI
+        if denominator == 0:
+            label_calc_result.config(text="분모가 0이면 계산 불가")
+            return
+
+        ratio = (numerator / denominator) * 100.0
+        # 소수점 2자리까지 출력
+        label_calc_result.config(text=f"{ratio:.2f}%")
+    except ValueError:
+        label_calc_result.config(text="숫자만 입력하세요")
+
 root = tk.Tk()
 root.title("YT IMG EXTRACTOR")
 
-# URL
+# ──────────[1] 메인 입력 폼──────────
 tk.Label(root, text="URL:").grid(row=0, column=0, sticky="w")
 entry_url = tk.Entry(root, width=50)
 entry_url.insert(0, "**URL을 여기에 입력하세요**")
 entry_url.grid(row=0, column=1, padx=5, pady=15)
 
-# THRESHOLD_DIFF
-tk.Label(root, text="이미지 추출 민감도 (낮을 수록 예민하게 추출):").grid(row=1, column=0, sticky="w")
+tk.Label(root, text="각 프레임 이미지 추출 민감도 (낮을수록 예민, 필요 시 수정):").grid(row=1, column=0, sticky="w")
 entry_threshold = tk.Entry(root, width=50)
 entry_threshold.insert(0, "15")
 entry_threshold.grid(row=1, column=1, padx=5, pady=10)
 
-# START_TIME_RAW
-tk.Label(root, text="[V2, V3] 시작 시간 입력 (ex: '0' or '1:23'):").grid(row=2, column=0, sticky="w")
+tk.Label(root, text="[V2, V3] 시작 시간 (ex: 0 or 1:23):").grid(row=2, column=0, sticky="w")
 entry_start_time = tk.Entry(root, width=50)
 entry_start_time.insert(0, "0")
 entry_start_time.grid(row=2, column=1, padx=5, pady=5)
 
-# END_TIME_RAW
-tk.Label(root, text="[V2, V3] 종료 시간 입력 (ex: '2:30', 미 입력시 끝까지):").grid(row=3, column=0, sticky="w")
+tk.Label(root, text="[V2, V3] 종료 시간 (ex: 2:30, 미 입력시 끝까지):").grid(row=3, column=0, sticky="w")
 entry_end_time = tk.Entry(root, width=50)
 entry_end_time.grid(row=3, column=1, padx=5, pady=5)
 
-# TAB_REGION_RATIO
-tk.Label(root, text="[V1] TAB_REGION_RATIO (세로 아래부터 추출 영역):").grid(row=4, column=0, sticky="w")
+tk.Label(root, text="[V1] 세로 아래부터 추출 영역:").grid(row=4, column=0, sticky="w")
 entry_tab_ratio = tk.Entry(root, width=50)
 entry_tab_ratio.insert(0, "0.45")
 entry_tab_ratio.grid(row=4, column=1, padx=5, pady=5)
 
-# TRANSITION_STABLE_SEC
-tk.Label(root, text="[V3] 평균 악보 고정 시간:").grid(row=5, column=0, sticky="w")
+tk.Label(root, text="[V3] 평균 악보 고정 시간 (초, 필요 시 수정):").grid(row=5, column=0, sticky="w")
 entry_transition = tk.Entry(root, width=50)
 entry_transition.insert(0, "2.0")
 entry_transition.grid(row=5, column=1, padx=5, pady=10)
 
-# X_START_PERCENT_RAW
-tk.Label(root, text="[V2, V3] 가로 추출 시작 영역 (왼쪽으로부터 0%~100%):").grid(row=6, column=0, sticky="w")
+tk.Label(root, text="[V2, V3] 가로 시작% (0~100):").grid(row=6, column=0, sticky="w")
 entry_xstart = tk.Entry(root, width=50)
 entry_xstart.insert(0, "0")
 entry_xstart.grid(row=6, column=1, padx=5, pady=5)
 
-# X_END_PERCENT_RAW
-tk.Label(root, text="[V2, V3] 가로 추출 종료 영역 (왼쪽으로부터 0%~100%):").grid(row=7, column=0, sticky="w")
+tk.Label(root, text="[V2, V3] 가로 끝% (0~100):").grid(row=7, column=0, sticky="w")
 entry_xend = tk.Entry(root, width=50)
 entry_xend.insert(0, "100")
 entry_xend.grid(row=7, column=1, padx=5, pady=5)
 
-# Y_START_PERCENT_RAW
-tk.Label(root, text="[V2, V3] 세로 추출 시작 영역 (위쪽으로부터 0%~100%):").grid(row=8, column=0, sticky="w")
+tk.Label(root, text="[V2, V3] 세로 시작% (0~100):").grid(row=8, column=0, sticky="w")
 entry_ystart = tk.Entry(root, width=50)
 entry_ystart.insert(0, "70")
 entry_ystart.grid(row=8, column=1, padx=5, pady=5)
 
-# Y_END_PERCENT_RAW
-tk.Label(root, text="[V2, V3] 세로 추출 종료 영역 (위쪽으로부터 0%~100%):").grid(row=9, column=0, sticky="w")
+tk.Label(root, text="[V2, V3] 세로 끝% (0~100):").grid(row=9, column=0, sticky="w")
 entry_yend = tk.Entry(root, width=50)
 entry_yend.insert(0, "100")
 entry_yend.grid(row=9, column=1, padx=5, pady=5)
 
-# BASE_FOLDER_NAME
-tk.Label(root, text="[V2, V3] 기본 폴더 이름:").grid(row=10, column=0, sticky="w")
+tk.Label(root, text="[V2, V3] 기본 폴더 이름 (필요 시 수정):").grid(row=10, column=0, sticky="w")
 entry_base_folder = tk.Entry(root, width=50)
 entry_base_folder.insert(0, "music_file_")
 entry_base_folder.grid(row=10, column=1, padx=5, pady=5)
 
-# 저장 버튼
-tk.Button(root, text="env.py 저장", command=save_env).grid(row=11, column=0, columnspan=2, pady=10)
+# env.py 저장 버튼
+tk.Button(root, text="(필수) env.py 저장", command=save_env).grid(row=11, column=0, columnspan=2, pady=30)
 
-# 라디오버튼
+# ─────────────────────────────────────────────────────────────
+# (1) 계산기 부분 (Frame)
+calc_frame = tk.Frame(root, bd=1, relief="groove")
+calc_frame.grid(row=12, column=0, padx=10, pady=10, sticky="nw")
+
+tk.Label(calc_frame, text="== 간단 비율 계산 ==").grid(row=0, column=0, columnspan=2, pady=5)
+
+tk.Label(calc_frame, text="해당 픽셀 위치:").grid(row=1, column=0, sticky="e")
+entry_numer = tk.Entry(calc_frame, width=20)
+entry_numer.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
+tk.Label(calc_frame, text="전체 프레임 크기:").grid(row=2, column=0, sticky="e")
+entry_denom = tk.Entry(calc_frame, width=20)
+entry_denom.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+
+tk.Button(calc_frame, text="계산하기", command=calc_ratio).grid(row=3, column=0, columnspan=2, pady=15)
+
+label_calc_result = tk.Label(calc_frame, text="결과가 여기에 표시됩니다")
+label_calc_result.grid(row=4, column=0, columnspan=2, pady=5)
+
+# ─────────────────────────────────────────────────────────────
+# (2) 이미지 부분 (same row=12, but column=1)
+try:
+    img_path = "guide.png"  # 사용하려는 파일
+    img_src = Image.open(img_path)
+    scale = 0.3
+    new_width = int(img_src.width * scale)
+    new_height = int(img_src.height * scale)
+    img_src = img_src.resize((new_width, new_height), Image.LANCZOS)
+    photo = ImageTk.PhotoImage(img_src)
+
+    img_label = tk.Label(root, image=photo)
+    img_label.grid(row=12, column=1, padx=10, pady=30, sticky="nw")
+    img_label.image = photo  # 참조 유지
+except:
+    tk.Label(root, text="이미지 로드 실패").grid(row=12, column=1, sticky="nw")
+
+# ─────────────────────────────────────────────────────────────
+# (3) 라디오버튼 & 실행 버튼 (row=13~15, 아래쪽)
+# 라디오버튼 변수
 radio_var = tk.StringVar()
 
-tk.Label(root, text="실행할 파일 선택:").grid(row=13, column=0, sticky="w")
+# 라디오버튼들을 담을 frame 생성
+radio_frame = tk.Frame(root)
+radio_frame.grid(row=13, column=0, columnspan=2, pady=10)
 
-rb1 = tk.Radiobutton(root, text="Ver.1", variable=radio_var, value="TAB_maker_v1")
-rb1.grid(row=14, column=0, sticky="w")
+# 라벨
+tk.Label(radio_frame, text="실행할 파일 선택:").pack(side="left", padx=(0, 10))
 
-rb2 = tk.Radiobutton(root, text="Ver.2", variable=radio_var, value="TAB_maker_v2")
-rb2.grid(row=15, column=0, sticky="w")
+# 라디오버튼들
+tk.Radiobutton(radio_frame, text="Ver.1", variable=radio_var, value="TAB_maker_v1").pack(side="left", padx=5)
+tk.Radiobutton(radio_frame, text="Ver.2", variable=radio_var, value="TAB_maker_v2").pack(side="left", padx=5)
+tk.Radiobutton(radio_frame, text="Ver.3", variable=radio_var, value="TAB_maker_v3").pack(side="left", padx=5)
 
-rb3 = tk.Radiobutton(root, text="Ver.3", variable=radio_var, value="TAB_maker_v3")
-rb3.grid(row=16, column=0, sticky="w")
-
-tk.Button(root, text="선택된 파일 실행", command=run_selected_py).grid(row=17, column=0, columnspan=2, pady=5)
-
+tk.Button(root, text="(필수) 선택된 파일 실행", command=run_selected_py).grid(row=14, column=0, columnspan=2, pady=10)
 
 root.mainloop()
