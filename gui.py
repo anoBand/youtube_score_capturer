@@ -5,6 +5,15 @@ from tkinter import messagebox
 import subprocess
 from PIL import Image, ImageTk
 
+# 실행 시 기준 경로를 올바르게 설정하는 함수
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
 def generate_env_py(
     url: str,
     start_time_raw: str,
@@ -18,8 +27,12 @@ def generate_env_py(
     transition_stable_sec: float,
     base_folder_name: str
 ):
-    """env.py를 생성(또는 갱신)해주는 함수"""
-    with open("env.py", "w", encoding="utf-8") as f:
+    """env.py를 생성(또는 갱신)해주는 함수 (src 폴더 내부에 생성)"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    src_dir = os.path.join(base_dir, "src")
+    env_path = os.path.join(src_dir, "env.py")  # src/env.py로 저장
+
+    with open(env_path, "w", encoding="utf-8") as f:
         f.write(
 f"""from typing import Optional, List
 
@@ -50,18 +63,32 @@ BASE_FOLDER_NAME: str = "{base_folder_name}"
         )
 
 def run_selected_py():
-    """선택된 파일을 CMD 창에서 실행"""
+    """선택된 파일을 CMD 창에서 실행 (exe 위치의 실제 폴더에서 실행)"""
     selected = radio_var.get()
     if not selected:
         messagebox.showerror("오류", "실행할 파일을 선택하세요!")
         return
 
-    # 현재 gui.py 폴더를 PATH에 우선 추가 → ffmpeg.exe를 찾기 위함
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    new_env = dict(os.environ)
-    new_env["PATH"] = base_dir + os.pathsep + new_env["PATH"]
+    if getattr(sys, 'frozen', False):
+        base_dir = os.path.dirname(sys.executable)  # exe 실행 파일 위치
+        python_executable = "python"
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))  # py 실행 파일 위치
+        python_executable = sys.executable
 
-    subprocess.Popen(["cmd", "/k", "python", f"{selected}.py"], env=new_env)
+    src_dir = os.path.join(base_dir, "src")  # 실제 src 폴더 경로
+
+    # 환경변수(PATH)에 src 추가 (ffmpeg.exe 사용위해)
+    new_env = dict(os.environ)
+    new_env["PATH"] = src_dir + os.pathsep + new_env["PATH"]
+
+    # subprocess 호출 시 cwd를 실제 폴더로 명시적 지정
+    subprocess.Popen(
+        ["cmd", "/k", python_executable, f"{selected}.py"],
+        env=new_env,
+        cwd=src_dir  # ← 실제 디렉토리 명시적 지정 (중요!)
+    )
+
 
 def save_env():
     # 입력값 가져오기
@@ -211,7 +238,8 @@ label_calc_result.grid(row=4, column=0, columnspan=2, pady=5)
 # ─────────────────────────────────────────────────────────────
 # (2) 이미지 부분 (same row=12, but column=1)
 try:
-    img_path = "guide.png"  # 사용하려는 파일
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    img_path = os.path.join(base_dir, "src", "guide.png")  # ← 경로 수정
     img_src = Image.open(img_path)
     scale = 0.3
     new_width = int(img_src.width * scale)
@@ -224,7 +252,6 @@ try:
     img_label.image = photo  # 참조 유지
 except:
     tk.Label(root, text="이미지 로드 실패").grid(row=12, column=1, sticky="nw")
-
 # ─────────────────────────────────────────────────────────────
 # (3) 라디오버튼 & 실행 버튼 (row=13~15, 아래쪽)
 # 라디오버튼 변수
