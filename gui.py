@@ -116,7 +116,7 @@ def save_env():
 
     # env.py 작성
     generate_env_py(
-        url=url or "https://youtu.be/x_NGsTIJptw?si=CzoRt-qTqrdJW3Dy",  # 혹은 기본값
+        url=url,  # 혹은 기본값
         start_time_raw=start_time or "0",
         end_time_raw=end_time_val,  # None이면 None 그대로 들어감
         threshold_diff=threshold_val,
