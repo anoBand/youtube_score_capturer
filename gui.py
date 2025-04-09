@@ -68,30 +68,34 @@ BASE_FOLDER_NAME: str = "{base_folder_name}"
         )
 
 def run_selected_py():
-    """선택된 파일을 CMD 창에서 실행 (exe 위치의 실제 폴더에서 실행)"""
+    """선택된 exe 파일을 CMD 창에서 실행 (exe 위치의 실제 폴더에서 실행)"""
     selected = radio_var.get()
     if not selected:
         messagebox.showerror("오류", "실행할 파일을 선택하세요!")
         return
 
+    # 실행 위치 설정
     if getattr(sys, 'frozen', False):
-        base_dir = os.path.dirname(sys.executable)  # exe 실행 파일 위치
-        python_executable = "python"
+        base_dir = os.path.dirname(sys.executable)  # EXE로 빌드된 경우 실행 위치
     else:
-        base_dir = os.path.dirname(os.path.abspath(__file__))  # py 실행 파일 위치
-        python_executable = sys.executable
+        base_dir = os.path.dirname(os.path.abspath(__file__))  # .py로 실행 중일 때
 
     src_dir = os.path.join(base_dir, "src")  # 실제 src 폴더 경로
+    exe_path = os.path.join(src_dir, f"{selected}.exe")  # 선택한 exe 경로
 
-    # 환경변수(PATH)에 src 추가 (ffmpeg.exe 사용위해)
+    if not os.path.exists(exe_path):
+        messagebox.showerror("오류", f"{exe_path} 파일이 존재하지 않습니다!")
+        return
+
+    # 환경변수(PATH)에 src 추가 (예: ffmpeg.exe 사용 시)
     new_env = dict(os.environ)
     new_env["PATH"] = src_dir + os.pathsep + new_env["PATH"]
 
-    # subprocess 호출 시 cwd를 실제 폴더로 명시적 지정
+    # CMD 창으로 실행 (창 유지하려면 /k 사용)
     subprocess.Popen(
-        ["cmd", "/k", python_executable, f"{selected}.exe"],
+        ["cmd", "/k", exe_path],
         env=new_env,
-        cwd=src_dir  # ← 실제 디렉토리 명시적 지정 (중요!)
+        cwd=src_dir
     )
 
 
