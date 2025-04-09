@@ -18,7 +18,7 @@
 
 압축 파일을 다운로드한 후 원하는 위치에 압축을 풀어주세요.
 
-[👉 Google Drive에서 다운로드하기](https://drive.google.com/file/d/10qBv8OqieYWr-MWxHJqASchnxV7WtwF8/view?usp=sharing)
+[👉 Google Drive에서 다운로드하기](https://drive.google.com/file/d/14n26dC7kQI8pik7wlexOROWiouTvyFRI/view?usp=sharing)
 
 ---
 
@@ -27,8 +27,8 @@
 1. 폴더에서 `gui.exe`를 더블클릭하여 실행합니다.
 2. 프로그램이 열리면, 유튜브 영상 링크를 입력하고, 원하는 악보 추출 방식을 선택하세요.
    - **버전 1:** 기본적인 악보 추출 (가장 빠름)
-   - **버전 2:** 중간 수준의 디테일
-   - **버전 3 이상:** 상세하고 다양한 옵션 제공
+   - **버전 2:** 중간 수준의 디테일 (세밀한 구역 설정)
+   - **버전 3:** 전환되는 악보를 더욱 정확하게 추출
 3. 영상의 URL과 버전 별 요구 항목을 입력 후 저장하세요.
 4. 실행 후, 자동으로 악보 PDF가 생성됩니다.
 
