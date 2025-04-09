@@ -10,14 +10,40 @@ import yt_dlp
 import numpy as np
 from fpdf import FPDF
 import sys
-# env.py 파일에서 상수 불러오기
-from env import (
-    URL, START_TIME_RAW, END_TIME_RAW,
-    THRESHOLD_DIFF,
-    X_START_PERCENT_RAW, X_END_PERCENT_RAW,
-    Y_START_PERCENT_RAW, Y_END_PERCENT_RAW,
-    BASE_FOLDER_NAME
-)
+import importlib.util
+
+def get_env_module():
+    if getattr(sys, 'frozen', False):
+        # exe로 패킹된 상태일 때
+        base_path = os.path.dirname(sys.executable)
+    else:
+        # 일반 .py로 실행할 때
+        base_path = os.path.dirname(__file__)
+
+    env_path = os.path.join(base_path, "env.py")
+
+    if not os.path.exists(env_path):
+        raise FileNotFoundError(f"env.py not found at: {env_path}")
+
+    spec = importlib.util.spec_from_file_location("env", env_path)
+    env = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(env)
+    return env
+
+# 동적 로딩
+env = get_env_module()
+
+# 변수 할당
+URL = env.URL
+START_TIME_RAW = env.START_TIME_RAW
+END_TIME_RAW = env.END_TIME_RAW
+THRESHOLD_DIFF = env.THRESHOLD_DIFF
+X_START_PERCENT_RAW = env.X_START_PERCENT_RAW
+X_END_PERCENT_RAW = env.X_END_PERCENT_RAW
+Y_START_PERCENT_RAW = env.Y_START_PERCENT_RAW
+Y_END_PERCENT_RAW = env.Y_END_PERCENT_RAW
+TRANSITION_STABLE_SEC = env.TRANSITION_STABLE_SEC
+BASE_FOLDER_NAME = env.BASE_FOLDER_NAME
 
 ############################################
 # 2) 함수 선언
