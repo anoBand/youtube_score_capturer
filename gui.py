@@ -28,7 +28,12 @@ def generate_env_py(
     base_folder_name: str
 ):
     """env.py를 생성(또는 갱신)해주는 함수 (src 폴더 내부에 생성)"""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if getattr(sys, 'frozen', False):
+    #test.exe로 실행한 경우,test.exe를 보관한 디렉토리의 full path를 취득
+        base_dir = os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        #python test.py로 실행한 경우,test.py를 보관한 디렉토리의 full path를 취득
+        base_dir = os.path.dirname(os.path.abspath(__file__))
     src_dir = os.path.join(base_dir, "src")
     env_path = os.path.join(src_dir, "env.py")  # src/env.py로 저장
 
@@ -238,7 +243,12 @@ label_calc_result.grid(row=4, column=0, columnspan=2, pady=5)
 # ─────────────────────────────────────────────────────────────
 # (2) 이미지 부분 (same row=12, but column=1)
 try:
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if getattr(sys, 'frozen', False):
+        #test.exe로 실행한 경우,test.exe를 보관한 디렉토리의 full path를 취득
+        base_dir = os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        #python test.py로 실행한 경우,test.py를 보관한 디렉토리의 full path를 취득
+        base_dir = os.path.dirname(os.path.abspath(__file__))
     img_path = os.path.join(base_dir, "src", "guide.png")  # ← 경로 수정
     img_src = Image.open(img_path)
     scale = 0.3
