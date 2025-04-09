@@ -18,7 +18,7 @@
 
 압축 파일을 다운로드한 후 원하는 위치에 압축을 풀어주세요.
 
-[👉 Google Drive에서 다운로드하기](https://drive.google.com/file/d/1dj0XC9n5LOTS9t5GnV7UO-O9S-msMaFM/view?usp=sharing)
+[👉 Google Drive에서 다운로드하기](https://drive.google.com/file/d/10qBv8OqieYWr-MWxHJqASchnxV7WtwF8/view?usp=sharing)
 
 ---
 
