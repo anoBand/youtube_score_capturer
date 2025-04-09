@@ -84,7 +84,7 @@ def run_selected_py():
 
     # subprocess 호출 시 cwd를 실제 폴더로 명시적 지정
     subprocess.Popen(
-        ["cmd", "/k", python_executable, f"{selected}.py"],
+        ["cmd", "/k", python_executable, f"{selected}.exe"],
         env=new_env,
         cwd=src_dir  # ← 실제 디렉토리 명시적 지정 (중요!)
     )
