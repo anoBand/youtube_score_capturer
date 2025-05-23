@@ -2,115 +2,84 @@ import os
 import sys
 import subprocess
 import threading
-import time
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
-from werkzeug.utils import secure_filename
-import zipfile
-import tempfile
-from typing import Optional
+from flask import Flask, render_template, request, jsonify, send_file
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
-# 전역 변수
+# 전역 상태
 is_frozen = getattr(sys, 'frozen', False)
 processing_status = {"running": False, "message": ""}
 
-def generate_env_py(
-    url: str,
-    start_time_raw: str,
-    end_time_raw: str,
-    threshold_diff: float,
-    x_start_percent_raw: float,
-    x_end_percent_raw: float,
-    y_start_percent_raw: float,
-    y_end_percent_raw: float,
-    transition_stable_sec: float,
-    base_folder_name: str
-):
-    """env.py를 생성(또는 갱신)해주는 함수 (src 폴더 내부에 생성)"""
+def generate_env_py(url, start_time_raw, end_time_raw, threshold_diff,
+                    x_start_percent_raw, x_end_percent_raw,
+                    y_start_percent_raw, y_end_percent_raw,
+                    transition_stable_sec, base_folder_name):
+    """env.py를 생성"""
     base_dir = os.path.dirname(os.path.abspath(sys.executable if is_frozen else __file__))
     src_dir = os.path.join(base_dir, "src")
-    
-    # src 디렉토리가 없으면 생성
-    if not os.path.exists(src_dir):
-        os.makedirs(src_dir)
-    
-    env_path = os.path.join(src_dir, "env.py")
+    os.makedirs(src_dir, exist_ok=True)
 
+    env_path = os.path.join(src_dir, "env.py")
     with open(env_path, "w", encoding="utf-8") as f:
-        f.write(
-f"""from typing import Optional, List
+        f.write(f"""from typing import Optional
 
 URL: str = "{url}"
-
-# 동영상 분석 구간 (초 단위)
-START_TIME_RAW: Optional[str] = {repr(start_time_raw)} # 정수 입력 시 초로 인식 (기본 처음부터)
-END_TIME_RAW: Optional[str] = {repr(end_time_raw)}     # mm:ss 형식 입력 가능, None 입력 시 끝까지
-
-# 프레임 비교 임계값(중복 제거)
+START_TIME_RAW: Optional[str] = {repr(start_time_raw)}
+END_TIME_RAW: Optional[str] = {repr(end_time_raw)}
 THRESHOLD_DIFF: float = {threshold_diff}
-
-# 잘라낼 영역 퍼센트(0% ~ 100%)
 X_START_PERCENT_RAW: float = {x_start_percent_raw}
 X_END_PERCENT_RAW: float   = {x_end_percent_raw}
 Y_START_PERCENT_RAW: float = {y_start_percent_raw}
 Y_END_PERCENT_RAW: float   = {y_end_percent_raw}
-
-# 전환 안정화 시간 (초)
 TRANSITION_STABLE_SEC: float = {transition_stable_sec}
-
-# 출력 폴더명 접두어
 BASE_FOLDER_NAME: str = "{base_folder_name}"
-
-# v3에서 사용하지 않는 변수들 (호환성 유지용)
-TAB_REGION_RATIO: float = 0.45  # v1 전용, v3에서는 사용 안함
-"""
-        )
+""")
 
 def run_v3_process():
-    """v3.exe를 백그라운드에서 실행"""
     global processing_status
-    
     try:
-        processing_status["running"] = True
-        processing_status["message"] = "처리 중..."
-        
-        # 실행 위치 설정
+        processing_status.update({"running": True, "message": "처리 중..."})
         base_dir = os.path.dirname(os.path.abspath(sys.executable if is_frozen else __file__))
         src_dir = os.path.join(base_dir, "src")
-        exe_path = os.path.join(src_dir, "v3.exe")
 
-        if not os.path.exists(exe_path):
-            processing_status["message"] = f"오류: {exe_path} 파일이 존재하지 않습니다!"
-            processing_status["running"] = False
+        possible_files = ["v3.exe", "v3.py", "main.exe", "main.py"]
+        exe_path, is_python = None, False
+        for name in possible_files:
+            path = os.path.join(src_dir, name)
+            if os.path.exists(path):
+                exe_path = path
+                is_python = name.endswith(".py")
+                break
+
+        if not exe_path:
+            processing_status.update({"running": False, "message": "실행 파일을 찾을 수 없습니다."})
             return
 
-        # 환경변수(PATH)에 src 추가
-        new_env = dict(os.environ)
-        new_env["PATH"] = src_dir + os.pathsep + new_env["PATH"]
-
-        # v3.exe 실행 (출력 캡처)
+        cmd = [sys.executable, exe_path] if is_python else [exe_path]
         process = subprocess.Popen(
-            [exe_path],
-            env=new_env,
+            cmd,
             cwd=src_dir,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding='utf-8'
+            stderr=subprocess.PIPE,
+            encoding='utf-8',
+            shell=True
         )
 
-        # 프로세스 완료 대기
-        output, _ = process.communicate()
-        
+        try:
+            output, error = process.communicate(timeout=300)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            processing_status.update({"running": False, "message": "5분 초과로 중단됨."})
+            return
+
         if process.returncode == 0:
-            processing_status["message"] = "처리 완료! 파일을 다운로드할 수 있습니다."
+            processing_status["message"] = "처리 완료. 다운로드 가능."
         else:
-            processing_status["message"] = f"처리 중 오류 발생: {output}"
-            
+            processing_status["message"] = f"오류: {error.strip() or output.strip()}"
+
     except Exception as e:
-        processing_status["message"] = f"실행 중 오류: {str(e)}"
+        processing_status["message"] = f"예외 발생: {e}"
     finally:
         processing_status["running"] = False
 
@@ -121,107 +90,78 @@ def index():
 @app.route('/save_config', methods=['POST'])
 def save_config():
     try:
-        # 폼 데이터 가져오기
-        url = request.form.get('url', '').strip()
-        start_time = request.form.get('start_time', '').strip()
-        end_time = request.form.get('end_time', '').strip()
-        threshold = request.form.get('threshold', '').strip()
-        x_start = request.form.get('x_start', '').strip()
-        x_end = request.form.get('x_end', '').strip()
-        y_start = request.form.get('y_start', '').strip()
-        y_end = request.form.get('y_end', '').strip()
-        transition_sec = request.form.get('transition_sec', '').strip()
-        base_folder = request.form.get('base_folder', '').strip()
-
-        # 필수값 체크
+        form = request.form
+        url = form.get('url', '').strip()
         if not url:
-            return jsonify({"success": False, "message": "YouTube URL을 입력하세요!"})
+            return jsonify({"success": False, "message": "URL 필요"})
 
         try:
-            # 숫자 변환 (기본값 처리)
-            threshold_val = float(threshold) if threshold else 5.0
-            x_start_val = float(x_start) if x_start else 0.0
-            x_end_val = float(x_end) if x_end else 100.0
-            y_start_val = float(y_start) if y_start else 70.0
-            y_end_val = float(y_end) if y_end else 100.0
-            transition_val = float(transition_sec) if transition_sec else 2.0
+            values = {
+                'threshold': float(form.get('threshold', 5.0)),
+                'x_start': float(form.get('x_start', 0.0)),
+                'x_end': float(form.get('x_end', 100.0)),
+                'y_start': float(form.get('y_start', 0.0)),
+                'y_end': float(form.get('y_end', 100.0)),
+                'transition_sec': float(form.get('transition_sec', 2.0)),
+            }
         except ValueError:
-            return jsonify({"success": False, "message": "숫자형 변환이 필요한 값들 중 잘못된 입력이 있습니다."})
+            return jsonify({"success": False, "message": "숫자 변환 오류"})
 
-        # end_time이 비어있다면 None 처리
-        end_time_val = None if not end_time else end_time
-
-        # env.py 작성
         generate_env_py(
             url=url,
-            start_time_raw=start_time or "0",
-            end_time_raw=end_time_val,
-            threshold_diff=threshold_val,
-            x_start_percent_raw=x_start_val,
-            x_end_percent_raw=x_end_val,
-            y_start_percent_raw=y_start_val,
-            y_end_percent_raw=y_end_val,
-            transition_stable_sec=transition_val,
-            base_folder_name=base_folder or "music_file_"
+            start_time_raw=form.get('start_time', '0'),
+            end_time_raw=form.get('end_time') or None,
+            threshold_diff=values['threshold'],
+            x_start_percent_raw=values['x_start'],
+            x_end_percent_raw=values['x_end'],
+            y_start_percent_raw=values['y_start'],
+            y_end_percent_raw=values['y_end'],
+            transition_stable_sec=values['transition_sec'],
+            base_folder_name=form.get('base_folder', 'music_file_')
         )
-
-        return jsonify({"success": True, "message": "설정이 저장되었습니다!"})
-
+        return jsonify({"success": True, "message": "설정 저장됨"})
     except Exception as e:
-        return jsonify({"success": False, "message": f"저장 중 오류 발생: {str(e)}"})
+        return jsonify({"success": False, "message": str(e)})
 
 @app.route('/run_process', methods=['POST'])
 def run_process():
-    global processing_status
-    
     if processing_status["running"]:
-        return jsonify({"success": False, "message": "이미 처리 중입니다."})
-    
-    # 백그라운드에서 v3.exe 실행
+        return jsonify({"success": False, "message": "이미 실행 중"})
     thread = threading.Thread(target=run_v3_process)
     thread.daemon = True
     thread.start()
-    
-    return jsonify({"success": True, "message": "처리를 시작했습니다."})
+    return jsonify({"success": True, "message": "처리 시작"})
 
 @app.route('/check_status')
 def check_status():
     return jsonify(processing_status)
 
 @app.route('/download')
-def download_files():
+def download_output_pdf():
     try:
         base_dir = os.path.dirname(os.path.abspath(sys.executable if is_frozen else __file__))
-        src_dir = os.path.join(base_dir, "src")
-        
-        # 생성된 파일들을 찾기 (music_file_로 시작하는 폴더)
-        output_folders = []
-        for item in os.listdir(src_dir):
-            item_path = os.path.join(src_dir, item)
-            if os.path.isdir(item_path) and item.startswith("music_file_"):
-                output_folders.append(item_path)
-        
-        if not output_folders:
-            return jsonify({"error": "다운로드할 파일이 없습니다. 먼저 처리를 완료해주세요."}), 404
-        
-        # 임시 ZIP 파일 생성
-        temp_dir = tempfile.mkdtemp()
-        zip_path = os.path.join(temp_dir, "output_files.zip")
-        
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for folder_path in output_folders:
-                folder_name = os.path.basename(folder_path)
-                for root, dirs, files in os.walk(folder_path):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        # ZIP 내부 경로 설정
-                        arcname = os.path.join(folder_name, os.path.relpath(file_path, folder_path))
-                        zipf.write(file_path, arcname)
-        
-        return send_file(zip_path, as_attachment=True, download_name="output_files.zip")
-        
+        music_folders = []
+        for item in os.listdir(base_dir):
+            if os.path.isdir(os.path.join(base_dir, item)) and item.startswith("music_file_"):
+                try:
+                    num = int(item.replace("music_file_", ""))
+                    music_folders.append((num, item))
+                except ValueError:
+                    continue
+
+        if not music_folders:
+            return jsonify({"error": "music_file_ 폴더 없음"}), 404
+
+        latest_folder = max(music_folders, key=lambda x: x[0])[1]
+        output_pdf = os.path.join(base_dir, latest_folder, "output.pdf")
+
+        if not os.path.exists(output_pdf):
+            return jsonify({"error": "output.pdf 없음"}), 404
+
+        return send_file(output_pdf, as_attachment=True, download_name="output.pdf")
+
     except Exception as e:
-        return jsonify({"error": f"다운로드 중 오류 발생: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
