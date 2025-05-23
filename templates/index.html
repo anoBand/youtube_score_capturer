@@ -297,6 +297,7 @@
                     <button type="button" id="runBtn" class="btn btn-run" disabled>▶️ 실행</button>
                     <button type="button" id="downloadBtn" class="btn btn-download" disabled>📥 다운로드</button>
                 </div>
+                
             </form>
 
             <div class="status-area" id="statusArea" style="display: none;">
@@ -363,6 +364,71 @@
 
         document.getElementById('downloadBtn').addEventListener('click', function() {
             window.location.href = '/download';
+        });
+
+        document.getElementById('debugBtn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/debug_info');
+                const info = await response.json();
+                
+                let debugText = '=== 디버그 정보 ===\n';
+                debugText += `Base Directory: ${info.base_dir}\n`;
+                debugText += `Src Directory: ${info.src_dir}\n`;
+                debugText += `Src Exists: ${info.src_exists}\n`;
+                debugText += `Python Version: ${info.python_version}\n`;
+                debugText += `Platform: ${info.platform}\n`;
+                debugText += `Files in src: ${info.files_in_src.join(', ')}\n`;
+                
+                alert(debugText);
+            } catch (error) {
+                alert('디버그 정보 확인 중 오류: ' + error.message);
+            }
+        });
+
+        document.getElementById('listFilesBtn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/list_files');
+                const info = await response.json();
+                
+                let fileText = '=== 파일 목록 ===\n';
+                fileText += `경로: ${info.src_dir}\n`;
+                fileText += `존재: ${info.exists}\n`;
+                fileText += `총 항목: ${info.total_items}\n\n`;
+                
+                if (info.folders.length > 0) {
+                    fileText += '📁 폴더들:\n';
+                    info.folders.forEach(folder => {
+                        fileText += `  - ${folder.name} (${folder.file_count}개 파일)\n`;
+                        if (folder.files.length <= 5) {
+                            folder.files.forEach(file => fileText += `    └ ${file}\n`);
+                        } else {
+                            folder.files.slice(0, 3).forEach(file => fileText += `    └ ${file}\n`);
+                            fileText += `    └ ... 외 ${folder.files.length - 3}개\n`;
+                        }
+                    });
+                    fileText += '\n';
+                }
+                
+                if (info.audio_files.length > 0) {
+                    fileText += '🎵 오디오 파일들:\n';
+                    info.audio_files.forEach(file => {
+                        fileText += `  - ${file.name} (${Math.round(file.size/1024)}KB)\n`;
+                    });
+                    fileText += '\n';
+                }
+                
+                if (info.files.length > info.audio_files.length) {
+                    fileText += '📄 기타 파일들:\n';
+                    info.files.filter(f => !['.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg'].includes(f.extension))
+                              .forEach(file => {
+                                  fileText += `  - ${file.name}\n`;
+                              });
+                }
+                
+                alert(fileText);
+            } catch (error) {
+                alert('파일 목록 확인 중 오류: ' + error.message);
+            }
         });
 
         function showStatus(message, type = 'info') {
