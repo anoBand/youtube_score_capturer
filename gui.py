@@ -96,7 +96,7 @@ def save_env():
 
     try:
         # 숫자 변환 (기본값 있을 경우 처리 가능)
-        threshold_val = float(threshold) if threshold else 15.0
+        threshold_val = float(threshold) if threshold else 5.0
         x_start_val = float(x_start) if x_start else 0.0
         x_end_val = float(x_end) if x_end else 100.0
         y_start_val = float(y_start) if y_start else 70.0
@@ -192,7 +192,7 @@ advanced_frame.pack(fill="x", pady=(0, 10))
 tk.Label(advanced_frame, text="프레임 차이 임계값:").grid(row=0, column=0, sticky="w")
 entry_threshold = tk.Entry(advanced_frame, width=15)
 entry_threshold.grid(row=0, column=1, padx=(10, 0))
-entry_threshold.insert(0, "15.0")
+entry_threshold.insert(0, "5.0")
 
 # 전환 안정화 시간
 tk.Label(advanced_frame, text="전환 안정화 시간(초):").grid(row=1, column=0, sticky="w")
