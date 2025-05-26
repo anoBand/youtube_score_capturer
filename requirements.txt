@@ -3,6 +3,7 @@ blinker==1.9.0
 click==8.2.1
 colorama==0.4.6
 Flask==3.1.1
+flask-cors==6.0.0
 fpdf==1.7.2
 gunicorn==23.0.0
 itsdangerous==2.2.0
