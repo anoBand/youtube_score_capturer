@@ -85,6 +85,15 @@ def run_v3_process():
     finally:
         processing_status["running"] = False
 
+@app.route('/download-env')
+def download_env():
+    # 임시 파일 생성
+    file_path = "env.txt"
+    with open(file_path, "w") as f:
+        f.write("YOUTUBE_API_KEY=your_key_here\n")
+
+    return send_file(file_path, as_attachment=True)
+
 @app.route('/')
 def index():
     return render_template('index.html')
