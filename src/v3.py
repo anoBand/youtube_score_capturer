@@ -4,6 +4,7 @@
 # 내장 라이브러리
 import os
 import re
+import argparse
 from typing import Optional, List
 # 외장 라이브러리
 import cv2
@@ -11,40 +12,6 @@ import yt_dlp
 import numpy as np
 from fpdf import FPDF
 import sys
-import importlib.util
-
-def get_env_module():
-    if getattr(sys, 'frozen', False):
-        # exe로 패킹된 상태일 때
-        base_path = os.path.dirname(sys.executable)
-    else:
-        # 일반 .py로 실행할 때
-        base_path = os.path.dirname(__file__)
-
-    env_path = os.path.join(base_path, "env.py")
-
-    if not os.path.exists(env_path):
-        raise FileNotFoundError(f"env.py not found at: {env_path}")
-
-    spec = importlib.util.spec_from_file_location("env", env_path)
-    env = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(env)
-    return env
-
-# 동적 로딩
-env = get_env_module()
-
-# 변수 할당
-URL = env.URL
-START_TIME_RAW = env.START_TIME_RAW
-END_TIME_RAW = env.END_TIME_RAW
-THRESHOLD_DIFF = env.THRESHOLD_DIFF
-X_START_PERCENT_RAW = env.X_START_PERCENT_RAW
-X_END_PERCENT_RAW = env.X_END_PERCENT_RAW
-Y_START_PERCENT_RAW = env.Y_START_PERCENT_RAW
-Y_END_PERCENT_RAW = env.Y_END_PERCENT_RAW
-TRANSITION_STABLE_SEC = env.TRANSITION_STABLE_SEC
-BASE_FOLDER_NAME = env.BASE_FOLDER_NAME
 
 ############################################
 # 2) 함수 선언
@@ -81,22 +48,13 @@ def parse_time(value: Optional[str]) -> Optional[float]:
 def download_youtube_video(url: str, folder_path: str) -> str:
     """
     유튜브 영상을 지정 폴더에 다운로드 후, 저장된 파일 경로를 반환한다.
-    같은 폴더의 ffmpeg.exe를 사용한다.
     """
     output_path: str = os.path.join(folder_path, "video.mp4")
     
-    # 현재 실행 파일(gui.exe 또는 .py)이 위치한 폴더를 기준으로 ffmpeg 경로 지정
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    ffmpeg_path = os.path.join(base_dir, "ffmpeg.exe")
-
     ydl_opts: dict = {
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
+        # ffmpeg 없이 다운로드하기 위해, 이미 합쳐진 mp4 포맷 중 가장 좋은 것을 선택합니다.
+        "format": "best[ext=mp4]/best",
         "outtmpl": output_path,
-        "ffmpeg_location": ffmpeg_path,  # ← 여기에 추가
-        "postprocessors": [{
-            "key": "FFmpegVideoConvertor",
-            "preferedformat": "mp4"
-        }]
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         print("Downloading video from YouTube... (yt_dlp)")
@@ -169,45 +127,54 @@ def save_images_to_pdf(images: List[np.ndarray], pdf_filename: str, temp_folder:
 ############################################
 # 3) 메인 코드
 ############################################
+def main():
+    parser = argparse.ArgumentParser(description="YouTube 영상에서 악보 이미지를 추출하여 PDF로 저장합니다.")
+    parser.add_argument("--url", required=True, help="YouTube 영상 URL")
+    parser.add_argument("--start-time", default='0', help="분석 시작 시간 (초 또는 mm:ss)")
+    parser.add_argument("--end-time", default=None, help="분석 종료 시간 (초 또는 mm:ss)")
+    parser.add_argument("--threshold", type=float, default=5.0, help="프레임 비교 임계값")
+    parser.add_argument("--x-start", type=float, default=0.0, help="잘라낼 X 시작 퍼센트")
+    parser.add_argument("--x-end", type=float, default=100.0, help="잘라낼 X 끝 퍼센트")
+    parser.add_argument("--y-start", type=float, default=0.0, help="잘라낼 Y 시작 퍼센트")
+    parser.add_argument("--y-end", type=float, default=100.0, help="잘라낼 Y 끝 퍼센트")
+    parser.add_argument("--transition-sec", type=float, default=2.0, help="전환 안정화 시간(초)")
+    parser.add_argument("--base-folder", default="music_file_", help="출력 폴더명 접두어")
+    args = parser.parse_args()
 
-# 3-1) 초기변수
-is_in_transition = False
-stable_time = 0.0
-last_pos_sec = 0.0
+    # 3-1) 초기변수
+    is_in_transition = False
+    stable_time = 0.0
+    last_pos_sec = 0.0
 
-# 3-2) 입력값 변환
-START_TIME = parse_time(START_TIME_RAW)
-END_TIME   = parse_time(END_TIME_RAW)
+    # 3-2) 입력값 변환
+    START_TIME = parse_time(args.start_time)
+    END_TIME   = parse_time(args.end_time)
 
-# 퍼센트도 "정수" 입력받았으므로 100으로 나눠서 0.x 형태로
-X_START_PERCENT: float = X_START_PERCENT_RAW / 100
-X_END_PERCENT:   float = X_END_PERCENT_RAW   / 100
-Y_START_PERCENT: float = Y_START_PERCENT_RAW / 100
-Y_END_PERCENT:   float = Y_END_PERCENT_RAW   / 100
+    X_START_PERCENT: float = args.x_start / 100
+    X_END_PERCENT:   float = args.x_end   / 100
+    Y_START_PERCENT: float = args.y_start / 100
+    Y_END_PERCENT:   float = args.y_end   / 100
 
-if __name__ == "__main__":
     ############################################
     # 4) 결과 저장할 폴더 생성 (상위 폴더에 생성)
     ############################################
     base_dir = os.getcwd()
-    parent_dir = os.path.dirname(base_dir)  # src의 상위 폴더 (실제 위치)
+    parent_dir = os.path.dirname(base_dir)
 
     counter = 1
     while True:
-        folder_path = os.path.join(parent_dir, f"{BASE_FOLDER_NAME}{counter}")
+        folder_path = os.path.join(parent_dir, f"{args.base_folder}{counter}")
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
             break
         counter += 1
     print(f"'{folder_path}' 디렉토리가 준비되었습니다.")
-    video_path: str = download_youtube_video(URL, folder_path)
+    
+    video_path: str = download_youtube_video(args.url, folder_path)
 
     temp_folder: str = os.path.join(folder_path, "temp_images")
     os.makedirs(temp_folder, exist_ok=True)
-    video_path: str = download_youtube_video(URL, folder_path)
 
-    temp_folder: str = os.path.join(folder_path, "temp_images")
-    os.makedirs(temp_folder, exist_ok=True)
     ############################################
     # 7) 비디오 정보 가져오기
     ############################################
@@ -221,11 +188,9 @@ if __name__ == "__main__":
     video_duration: float = total_frames / fps if fps else 0.0
     print(f"Video duration: {video_duration:.2f} sec, FPS: {fps:.2f}")
 
-    # END_TIME이 None이거나 영상 길이를 넘어가면 영상 끝까지
     modified_end_time: float = END_TIME if (END_TIME and END_TIME < video_duration) else video_duration
     print(f"Analyzing frames from {START_TIME or 0:.2f}s to {modified_end_time:.2f}s")
 
-    # START_TIME 위치로 이동 (밀리초 기준)
     if START_TIME and START_TIME > 0:
         cap.set(cv2.CAP_PROP_POS_MSEC, START_TIME * 1000)
 
@@ -236,7 +201,7 @@ if __name__ == "__main__":
     # 8) 프레임 추출 (START_TIME ~ modified_end_time)
     ############################################
     frame_count: int = 0
-    PRINT_INTERVAL = 90  # 90프레임마다 출력
+    PRINT_INTERVAL = 90
 
     while True:
         current_pos_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
@@ -247,12 +212,10 @@ if __name__ == "__main__":
         if not success:
             break
 
-        # dt(현재 프레임 ~ 이전 프레임 시간차) 계산
         dt = current_pos_sec - last_pos_sec
         last_pos_sec = current_pos_sec
         frame_count += 1
 
-        # 90프레임마다 한 번만 진행상황 출력
         if frame_count % PRINT_INTERVAL == 0:
             print(f"[Frame Extraction] Processed {frame_count} frames... (stable_time={stable_time:.2f}, in_transition={is_in_transition})")
 
@@ -270,23 +233,16 @@ if __name__ == "__main__":
             diff = cv2.absdiff(prev_frame, gray_frame)
             mean_diff = float(np.mean(diff))
 
-            # [1] 화면이 많이 변하면(전환 중) => stable_time 초기화
-            if mean_diff > THRESHOLD_DIFF:
+            if mean_diff > args.threshold:
                 is_in_transition = True
                 stable_time = 0.0
             else:
-                # [2] 작은 변화 => 안정 구간 누적
                 if is_in_transition:
                     stable_time += dt
-                    # 2초 이상 안정이면 "전환 완료"로 판단
-                    if stable_time >= TRANSITION_STABLE_SEC:
+                    if stable_time >= args.transition_sec:
                         frame_list.append(cropped_frame)
                         is_in_transition = False
-                else:
-                    # 이미 안정 상태
-                    pass
         else:
-            # 첫 프레임은 초기 악보라 보고 추가 가능
             frame_list.append(cropped_frame)
 
         prev_frame = gray_frame
@@ -295,7 +251,6 @@ if __name__ == "__main__":
 
     print(f"Frame loop finished. Total frames read: {frame_count}, final collected frames: {len(frame_list)}")
 
-    # 9) TAB(악보) 영역 추출
     tab_images: List[np.ndarray] = []
     for f in frame_list:
         tab_region: Optional[np.ndarray] = extract_tab_region(f)
@@ -304,8 +259,10 @@ if __name__ == "__main__":
 
     print(f"Total TAB regions found: {len(tab_images)}")
 
-    # 10) PDF로 저장
     pdf_output_path: str = os.path.join(folder_path, "output.pdf")
     save_images_to_pdf(tab_images, pdf_output_path, temp_folder)
 
     print("All done!")
+
+if __name__ == "__main__":
+    main()
