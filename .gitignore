@@ -1,0 +1,43 @@
+# =================================================================
+# Project-specific files to ignore
+# =================================================================
+music_file_*
+env.py
+
+
+# =================================================================
+# Standard Python, IDE, and OS files to ignore
+# =================================================================
+
+# Environments - It's good practice to ignore all common names
+.env
+.venv
+env/
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.pytest_cache/
+htmlcov/
+
+# IDEs and editors
+.idea/
+.vscode/
+.vs/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
