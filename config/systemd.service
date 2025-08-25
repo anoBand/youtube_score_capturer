@@ -1,0 +1,18 @@
+[Unit]
+Description=YouTube Score Capturer
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/youtube-score-capturer
+Environment=PATH=/home/ubuntu/youtube-score-capturer/venv/bin
+Environment=FLASK_ENV=production
+ExecStart=/home/ubuntu/youtube-score-capturer/venv/bin/python -m waitress --listen=127.0.0.1:5000 app:app
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
