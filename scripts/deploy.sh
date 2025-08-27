@@ -3,34 +3,30 @@ set -e
 
 echo "🚀 YouTube Score Capturer 배포 시작..."
 
-# --- ffmpeg: 독립 실행 버전 직접 설치 ---
+# --- ffmpeg: 독립 실행 버전 직접 설치 (수정된 버전) ---
 echo "📦 ffmpeg 설치를 시작합니다 (독립 실행 버전 다운로드 방식)..."
 
-# 1. 최신 ffmpeg static 빌드 다운로드 (x86_64/amd64 아키텍처용)
-# John Van Sickle의 빌드는 널리 사용되고 신뢰성이 높습니다.
-curl -o ffmpeg-release.tar.xz https://johnvansickle.com/ffmpeg/builds/ffmpeg-release-amd64-static.tar.xz
+# 1. 최신 ffmpeg git 빌드 다운로드 (-L 옵션으로 리다이렉트 자동 처리)
+curl -L -o ffmpeg-git.tar.xz https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz
 
 # 2. 다운로드한 파일 압축 해제
-tar -xf ffmpeg-release.tar.xz
+tar -xf ffmpeg-git.tar.xz
 
-# 3. 압축 해제된 폴더 안의 ffmpeg 실행 파일을 시스템 경로로 이동
-# (폴더 이름에 버전이 포함되어 있어 와일드카드 * 를 사용합니다)
-sudo mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
-sudo mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
+# 3. 압축 해제된 폴더 안의 실행 파일을 시스템 경로로 이동
+sudo mv ffmpeg-git-*-amd64-static/ffmpeg /usr/local/bin/
+sudo mv ffmpeg-git-*-amd64-static/ffprobe /usr/local/bin/
 
 # 4. 정리: 다운로드한 압축 파일과 압축 해제된 폴더 삭제
-rm -rf ffmpeg-*-amd64-static
-rm ffmpeg-release.tar.xz
+rm -rf ffmpeg-git-*-amd64-static
+rm ffmpeg-git.tar.xz
 
 echo "✅ ffmpeg 설치 완료."
-ffmpeg -version # 설치가 잘 되었는지 버전 확인
+ffmpeg -version # 설치 확인
 
 # --- 나머지 패키지 설치 ---
 echo "📦 나머지 패키지를 설치합니다..."
 sudo yum update -y
 sudo yum install -y python3-pip nginx curl htop
-# 프로젝트 디렉토리로 이동
-cd /home/ec2-user/youtube-score-capturer
 
 # Python 가상환경 설정
 echo "🐍 Python 가상환경 설정 중..."
