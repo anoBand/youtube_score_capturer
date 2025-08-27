@@ -3,8 +3,13 @@ set -e
 
 echo "🚀 YouTube Score Capturer 배포 시작..."
 
-# 기본 패키지 업데이트 및 설치
-echo "📦 패키지를 설치합니다..."
+# 추가 저장소(RPM Fusion) 활성화 (ffmpeg 설치를 위해)
+echo "📦 추가 저장소(RPM Fusion)를 설치합니다..."
+sudo yum install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+sudo yum install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+
+# 시스템 업데이트 및 패키지 설치
+echo "📦 패키지 목록을 갱신하고 설치합니다..."
 sudo yum update -y
 sudo yum install -y python3-pip nginx ffmpeg curl htop
 
