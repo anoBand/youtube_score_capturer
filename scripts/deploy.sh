@@ -3,10 +3,14 @@ set -e
 
 echo "🚀 YouTube Score Capturer 배포 시작..."
 
+# 추가 저장소(EPEL) 활성화 (ffmpeg 설치를 위해)
+echo "📦 추가 저장소(EPEL)를 활성화합니다..."
+sudo amazon-linux-extras install epel -y
+
 # 기본 패키지 업데이트 및 설치
-echo "📦 패키지 설치 중..."
-sudo dnf update -y
-sudo dnf install -y python3-pip python3-venv nginx ffmpeg curl htop
+echo "📦 패키지를 설치합니다..."
+sudo yum update -y
+sudo yum install -y python3-pip nginx ffmpeg curl htop
 
 # 프로젝트 디렉토리로 이동
 cd /home/ec2-user/youtube-score-capturer
