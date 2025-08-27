@@ -1,4 +1,4 @@
-#!/bin/bash
+	#!/bin/bash
 set -e
 
 echo "🚀 YouTube Score Capturer 배포 시작..."
@@ -26,7 +26,7 @@ ffmpeg -version # 설치 확인
 # --- 나머지 패키지 설치 ---
 echo "📦 나머지 패키지를 설치합니다..."
 sudo yum update -y
-sudo yum install -y python3-pip nginx curl htop
+sudo yum install -y python3-pip nginx htop
 
 # Python 가상환경 설정
 echo "🐍 Python 가상환경 설정 중..."
@@ -56,19 +56,15 @@ fi
 
 # Nginx 설정
 echo "🌐 웹서버 설정 중..."
-sudo cp config/nginx.conf /etc/nginx/sites-available/youtube-score
-sudo ln -sf /etc/nginx/sites-available/youtube-score /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+# 아마존 리눅스 방식: /etc/nginx/conf.d/ 폴더에 .conf 파일로 복사
+sudo cp config/nginx.conf /etc/nginx/conf.d/youtube-score.conf
 
-# Nginx 설정 테스트 및 재시작
+# Nginx 설정 테스트
 sudo nginx -t
-sudo systemctl reload nginx
 
-# 방화벽 설정
-echo "🔒 방화벽 설정 중..."
-sudo ufw allow 'Nginx Full'
-sudo ufw allow ssh
-sudo ufw --force enable
+# Nginx 서비스 활성화 및 재시작
+sudo systemctl enable nginx
+sudo systemctl restart nginx
 
 # 로그 디렉토리 생성
 sudo mkdir -p /var/log/youtube-score
