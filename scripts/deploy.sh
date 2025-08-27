@@ -9,7 +9,7 @@ sudo dnf update -y
 sudo dnf install -y python3-pip python3-venv nginx ffmpeg curl htop
 
 # 프로젝트 디렉토리로 이동
-cd /home/ubuntu/youtube-score-capturer
+cd /home/ec2-user/youtube-score-capturer
 
 # Python 가상환경 설정
 echo "🐍 Python 가상환경 설정 중..."
@@ -55,7 +55,7 @@ sudo ufw --force enable
 
 # 로그 디렉토리 생성
 sudo mkdir -p /var/log/youtube-score
-sudo chown ubuntu:ubuntu /var/log/youtube-score
+sudo chown ec2-user:ec2-user /var/log/youtube-score
 
 
 echo "✅ 배포 완료!"

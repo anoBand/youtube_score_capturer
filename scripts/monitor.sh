@@ -6,7 +6,7 @@ LOG_FILE="/var/log/youtube-score/monitor.log"
 # 로그 파일 생성 (없다면)
 sudo mkdir -p /var/log/youtube-score
 sudo touch $LOG_FILE
-sudo chown ubuntu:ubuntu $LOG_FILE
+sudo chown ec2-user:ec2-user $LOG_FILE
 
 # 서비스 상태 확인
 if ! systemctl is-active --quiet $SERVICE_NAME; then

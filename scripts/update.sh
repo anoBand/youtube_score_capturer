@@ -3,7 +3,7 @@ set -e
 
 echo "🔄 애플리케이션 업데이트 중..."
 
-cd /home/ubuntu/youtube-score-capturer
+cd /home/ec2-user/youtube-score-capturer
 
 # Git pull로 최신 코드 가져오기
 echo "📥 최신 코드 다운로드 중..."

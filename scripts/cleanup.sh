@@ -1,12 +1,12 @@
 #!/bin/bash
 
 LOG_FILE="/var/log/youtube-score/cleanup.log"
-APP_DIR="/home/ubuntu/youtube-score-capturer"
+APP_DIR="/home/ec2-user/youtube-score-capturer"
 
 # 로그 파일 생성 (없다면)
 sudo mkdir -p /var/log/youtube-score
 sudo touch $LOG_FILE
-sudo chown ubuntu:ubuntu $LOG_FILE
+sudo chown ec2-user:ec2-user $LOG_FILE
 
 echo "$(date): 🧹 정리 작업 시작" >> $LOG_FILE
 
