@@ -14,8 +14,8 @@ fi
 
 # 1. Certbot 설치
 echo "📦 Certbot 설치 중..."
-sudo apt update
-sudo apt install -y certbot python3-certbot-nginx
+sudo yum update
+sudo yum install -y certbot python3-certbot-nginx
 
 # 2. 도메인 접속 테스트
 echo "🧪 도메인 접속 테스트 중..."
