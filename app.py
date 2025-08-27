@@ -24,14 +24,15 @@ download_lock = threading.RLock()
 is_frozen = getattr(sys, 'frozen', False)
 processing_status = {"running": False, "message": ""}
 
-def run_v3_process(params):
+def run_extractor_process(params):
     global processing_status
     try:
         processing_status.update({"running": True, "message": "처리 중..."})
         base_dir = os.path.dirname(os.path.abspath(sys.executable if is_frozen else __file__))
         src_dir = os.path.join(base_dir, "src")
 
-        possible_files = ["v3.exe", "v3.py", "main.exe", "main.py"]
+        # 기능에 맞게 명확한 이름의 실행 파일을 찾습니다.
+        possible_files = ["extractor.exe", "extractor.py"]
         exe_path, is_python = None, False
         for name in possible_files:
             path = os.path.join(src_dir, name)
@@ -41,10 +42,10 @@ def run_v3_process(params):
                 break
 
         if not exe_path:
-            processing_status.update({"running": False, "message": "실행 파일을 찾을 수 없습니다."})
+            processing_status.update({"running": False, "message": "실행 파일(extractor.exe 또는 extractor.py)을 찾을 수 없습니다."})
             return
 
-        # v3.py에 전달할 커맨드 라인 인자를 구성합니다.
+        # extractor.py에 전달할 커맨드 라인 인자를 구성합니다.
         cmd = [sys.executable, exe_path] if is_python else [exe_path]
         cmd.extend([
             "--url", params['url'],
@@ -105,7 +106,7 @@ def run_process():
         return jsonify({"success": False, "message": "YouTube URL을 입력해야 합니다."})
 
     # 받은 폼 데이터를 스레드에 전달
-    thread = threading.Thread(target=run_v3_process, args=(form_data,))
+    thread = threading.Thread(target=run_extractor_process, args=(form_data,))
     thread.daemon = True
     thread.start()
     return jsonify({"success": True, "message": "프로세스 실행을 시작했습니다."})
