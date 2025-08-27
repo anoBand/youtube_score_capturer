@@ -5,8 +5,8 @@ echo "🚀 YouTube Score Capturer 배포 시작..."
 
 # 기본 패키지 업데이트 및 설치
 echo "📦 패키지 설치 중..."
-sudo apt update
-sudo apt install -y python3-pip python3-venv nginx ffmpeg curl htop
+sudo dnf update -y
+sudo dnf install -y python3-pip python3-venv nginx ffmpeg curl htop
 
 # 프로젝트 디렉토리로 이동
 cd /home/ubuntu/youtube-score-capturer
