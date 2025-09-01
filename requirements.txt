@@ -1,7 +1,7 @@
-flask
+Flask>=2.0.0
 flask-cors
-opencv-python
-yt_dlp
+yt-dlp
+opencv-python-headless
 numpy
 fpdf2
-waitress
+Pillow
