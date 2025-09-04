@@ -4,7 +4,7 @@ import os
 from typing import List
 
 def create_pdf_from_images(image_paths: List[str], output_dir: str, filename: str = "output.pdf") -> str:
-    """이미지 파일 경로 리스트를 받아 PDF로 병합합니다."""
+    # Merges a list of image file paths into a PDF.
     print(f"Starting PDF generation from {len(image_paths)} images.")
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=False)
@@ -46,6 +46,6 @@ def create_pdf_from_images(image_paths: List[str], output_dir: str, filename: st
         pdf.output(pdf_path)
         print(f"PDF successfully created at: {pdf_path}")
     else:
-        raise RuntimeError("PDF 생성에 실패했습니다. 처리할 이미지가 없습니다.")
+        raise RuntimeError("PDF generation failed. No images to process.")
 
     return pdf_path

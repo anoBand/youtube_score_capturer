@@ -4,11 +4,7 @@ import os
 from typing import Optional, List
 
 def parse_time(value: Optional[str]) -> Optional[float]:
-    """
-    None -> None
-    정수/실수 형태 -> float(초)
-    'mm:ss' 형태 -> (mm * 60 + ss)
-    """
+    # Parses time from string to seconds.
     if value is None or value.strip() == '':
         return None
     if ':' in value:
@@ -17,31 +13,26 @@ def parse_time(value: Optional[str]) -> Optional[float]:
     return float(value)
 
 def extract_tab_region(frame: np.ndarray) -> Optional[np.ndarray]:
-    """
-    프레임에서 가장 큰 컨투어 영역(악보)을 찾아 잘라낸다.
-    """
+    # Finds the largest contour in a frame (the sheet music) and crops it.
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # Canny 엣지 검출을 사용하여 좀 더 명확한 외곽선을 찾도록 개선
     edges = cv2.Canny(gray, 50, 150)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours:
-        # 가장 큰 컨투어 선택
         largest_contour = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest_contour)
-        # 추출된 영역이 너무 작지 않은지 확인 (노이즈 방지)
-        if w > 50 and h > 50:
+        if w > 50 and h > 50: # Avoid noise
             return frame[y:y + h, x:x + w]
     return None
 
 def process_video_frames(video_path: str, output_dir: str, params: dict) -> List[str]:
-    """OpenCV로 영상에서 악보 이미지를 추출하고 처리하여 이미지 파일 경로 리스트를 반환합니다."""
+    # Extracts and processes sheet music images from a video, returns a list of image paths.
     print("Starting video processing...")
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise IOError("비디오 파일을 열 수 없습니다.")
+        raise IOError("Cannot open video file.")
 
-    # 파라미터 추출
+    # Extract parameters
     start_time = parse_time(params.get('start_time'))
     end_time = parse_time(params.get('end_time'))
     threshold = float(params.get('threshold', 5.0))
@@ -106,7 +97,7 @@ def process_video_frames(video_path: str, output_dir: str, params: dict) -> List
                         stable_frames.append(cropped_frame)
                         is_in_transition = False
         else:
-            # 첫 프레임은 바로 추가
+            # Add the first frame directly
             stable_frames.append(cropped_frame)
 
         prev_frame_gray = gray_frame
@@ -114,7 +105,7 @@ def process_video_frames(video_path: str, output_dir: str, params: dict) -> List
     cap.release()
     print(f"Found {len(stable_frames)} stable frames.")
 
-    # 안정된 프레임에서 악보 영역 추출
+    # Extract tab regions from stable frames
     for i, frame in enumerate(stable_frames):
         tab_region = extract_tab_region(frame)
         if tab_region is not None:

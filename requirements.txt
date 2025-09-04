@@ -5,3 +5,4 @@ opencv-python-headless
 numpy
 fpdf2
 Pillow
+gunicorn
