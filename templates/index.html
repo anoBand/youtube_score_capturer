@@ -264,6 +264,14 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="frame_interval_sec">프레임 처리 간격 (초)</label>
+                        <input type="number" id="frame_interval_sec" name="frame_interval_sec" step="0.1" placeholder="0.5">
+                        <div class="help-text">N초 마다 한 프레임씩 처리 (기본: 0.5)</div>
+                    </div>
+                </div>
+
                 <div class="form-row-4">
                     <div class="form-group">
                         <label for="x_start">X 시작 (%)</label>
@@ -302,43 +310,52 @@
     </div>
 
     <script>
-        let statusCheckInterval;
-
         document.getElementById('configForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const runBtn = document.getElementById('runBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
             runBtn.disabled = true;
             runBtn.innerHTML = '<span class="loading-spinner"></span> 실행 중...';
-            document.getElementById('downloadBtn').disabled = true;
+            downloadBtn.disabled = true;
+
+            showStatus('영상 다운로드 및 처리 중... 이 작업은 몇 분 정도 소요될 수 있습니다.', 'processing');
 
             const formData = new FormData(this);
             
             try {
-                const response = await fetch('/run_process', {
+                const response = await fetch('/execute', {
                     method: 'POST',
                     body: formData
                 });
                 
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('처리를 시작했습니다. 잠시만 기다려주세요...', 'processing');
-                    startStatusCheck();
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // The filename is set by the Content-Disposition header on the server
+                    a.download = response.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    showStatus('PDF 생성이 완료되었습니다! 다운로드가 시작됩니다.', 'success');
+                    downloadBtn.disabled = false; // Or hide it, since download is automatic
+
                 } else {
-                    showStatus(result.message, 'error');
-                    runBtn.disabled = false;
-                    runBtn.innerHTML = '▶️ 실행';
+                    const errorResult = await response.json();
+                    showStatus(`오류가 발생했습니다: ${errorResult.error}`, 'error');
                 }
+
             } catch (error) {
-                showStatus('실행 중 오류가 발생했습니다: ' + error.message, 'error');
+                showStatus('실행 중 예측하지 못한 오류가 발생했습니다: ' + error.message, 'error');
+            } finally {
                 runBtn.disabled = false;
                 runBtn.innerHTML = '▶️ 실행';
             }
-        });
-
-        document.getElementById('downloadBtn').addEventListener('click', function() {
-            window.location.href = '/download';
         });
 
         function showStatus(message, type = 'info') {
@@ -354,58 +371,11 @@
                 statusArea.classList.add('status-error');
             } else if (type === 'processing') {
                 statusArea.classList.add('status-processing');
-                statusMessage.innerHTML = '<span class="loading-spinner"></span>' + message;
+                statusMessage.innerHTML = '<span class="loading-spinner"></span> ' + message;
             }
             
             statusArea.style.display = 'block';
         }
-
-        function startStatusCheck() {
-            if (statusCheckInterval) {
-                clearInterval(statusCheckInterval);
-            }
-            statusCheckInterval = setInterval(checkStatus, 2000);
-        }
-
-        function stopStatusCheck() {
-            if (statusCheckInterval) {
-                clearInterval(statusCheckInterval);
-                statusCheckInterval = null;
-            }
-        }
-
-        async function checkStatus() {
-            try {
-                const response = await fetch('/check_status');
-                const status = await response.json();
-                
-                if (!status.running) {
-                    if (status.message) { // 메시지가 있을 때만 상태 표시
-                        stopStatusCheck();
-                        
-                        if (status.message.includes('완료')) {
-                            showStatus(status.message, 'success');
-                            document.getElementById('downloadBtn').disabled = false;
-                        } else {
-                            showStatus(status.message, 'error');
-                        }
-                        
-                        const runBtn = document.getElementById('runBtn');
-                        runBtn.disabled = false;
-                        runBtn.innerHTML = '▶️ 실행';
-                    }
-                } else {
-                    // 실행 중일 때는 계속 상태 메시지 업데이트
-                    showStatus(status.message || '처리 중...', 'processing');
-                }
-            } catch (error) {
-                console.error('상태 확인 중 오류:', error);
-                stopStatusCheck(); // 오류 발생 시 인터벌 중지
-            }
-        }
-
-        // 페이지 로드 시, 이전 실행 상태가 있는지 확인
-        window.addEventListener('load', checkStatus);
     </script>
 </body>
 </html>

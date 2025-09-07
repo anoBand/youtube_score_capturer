@@ -36,6 +36,7 @@ music_file_*/
 *.jpeg
 temp/
 tmp/
+*.md
 
 # 로그 파일
 *.log

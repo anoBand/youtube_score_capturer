@@ -1,16 +1,20 @@
 import yt_dlp
 import os
 
-def download_youtube_video(url, output_dir):
+def download_youtube_video(url, output_dir, start_time=None, end_time=None):
     # Downloads a YouTube video to the specified directory and returns the file path.
+    
     # Configure yt-dlp options
     ydl_opts = {
-        # Download in mp4 format, 720p or less, to save memory and processing time
         'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': os.path.join(output_dir, 'video.mp4'), # Fixed filename
         'quiet': True, # Minimize logs
     }
-    
+
+    if start_time is not None and end_time is not None and start_time < end_time:
+        # Use download_sections for precise cutting
+        ydl_opts['download_sections'] = f"*{start_time}-{end_time}"
+
     print(f"Starting download for URL: {url}")
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
