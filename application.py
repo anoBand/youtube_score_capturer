@@ -7,14 +7,22 @@ import traceback
 from flask import Flask, request, render_template, send_file, jsonify
 from flask_cors import CORS
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 # --- 변경점 1: FFmpeg 없는 다운로더 함수를 임포트 ---
 # (함수 이름은 최종 결정한 이름으로 맞춰주세요. 예: download_1080p_video_only)
 from modules.youtube_downloader import download_1080p_video_only as download_youtube_video
 from modules.image_processor import process_video_frames
 from modules.pdf_generator import create_pdf_from_images
 
+
 # Beanstalk looks for a variable named 'application'.
 application = Flask(__name__)
+# --- 변경점 2: ProxyFix 미들웨어 적용 ---
+# 이 코드는 Beanstalk의 로드 밸런서 뒤에서 실행될 때,
+# Flask가 X-Forwarded-Proto 같은 헤더를 신뢰하여 HTTPS 환경임을 인지하게 만듭니다.
+application.wsgi_app = ProxyFix(application.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 CORS(application)
 
 # Define a base temp directory within the project
@@ -64,7 +72,7 @@ def execute():
         y_end = int(data.get('y_end') or 100)
         threshold = float(data.get('threshold') or 5.0)
         transition_sec = float(data.get('transition_sec') or 2.0)
-        frame_interval_sec = float(data.get('frame_interval_sec') or 0.5)
+        frame_interval_sec = float(data.get('frame_interval_sec') or 1.0)
 
         # --- 변경점 2: 다운로더 호출 시 start_time, end_time 제거 ---
         # 이제 동영상 전체를 다운로드합니다.

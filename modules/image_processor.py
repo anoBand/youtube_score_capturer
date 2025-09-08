@@ -10,7 +10,7 @@ def process_video_frames(
     video_path: str, output_dir: str, 
     start_time: Optional[int], end_time: Optional[int], 
     x_start: int, x_end: int, y_start: int, y_end: int, 
-    threshold: float, transition_sec: float, frame_interval_sec: float = 0.5
+    threshold: float, transition_sec: float, frame_interval_sec: float = 1.0
 ) -> List[str]:
     # Extracts and processes sheet music images from a video, returns a list of image paths.
     print("Starting video processing...")

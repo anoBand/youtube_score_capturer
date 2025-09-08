@@ -267,8 +267,8 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="frame_interval_sec">프레임 처리 간격 (초)</label>
-                        <input type="number" id="frame_interval_sec" name="frame_interval_sec" step="0.1" placeholder="0.5">
-                        <div class="help-text">N초 마다 한 프레임씩 처리 (기본: 0.5)</div>
+                        <input type="number" id="frame_interval_sec" name="frame_interval_sec" step="0.1" placeholder="1.0">
+                        <div class="help-text">N초 마다 한 프레임씩 처리 (기본: 1.0)</div>
                     </div>
                 </div>
 
@@ -309,15 +309,40 @@
         </div>
     </div>
 
-    <script>
-        document.getElementById('configForm').addEventListener('submit', async function(e) {
+<script>
+        // --- 변경점 1: 생성된 PDF 데이터의 주소와 파일명을 저장할 변수 추가 ---
+        let pdfObjectURL = null;
+        let pdfFilename = 'sheet_music.pdf'; // 기본 파일명
+
+        const configForm = document.getElementById('configForm');
+        const runBtn = document.getElementById('runBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // --- 변경점 2: 다운로드 로직을 별도 함수로 분리 ---
+        function triggerDownload(url, filename) {
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            // 자동 다운로드 후에는 revokeObjectURL을 호출하지 않아야 수동 다운로드가 가능합니다.
+            // 대신, 새 실행 시 기존 URL을 폐기합니다.
+            document.body.removeChild(a);
+        }
+
+        configForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const runBtn = document.getElementById('runBtn');
-            const downloadBtn = document.getElementById('downloadBtn');
+            // --- 변경점 3: 새 실행 시 이전 PDF 데이터 정보 초기화 ---
+            if (pdfObjectURL) {
+                window.URL.revokeObjectURL(pdfObjectURL); // 이전 URL 메모리에서 해제
+                pdfObjectURL = null;
+            }
+
             runBtn.disabled = true;
             runBtn.innerHTML = '<span class="loading-spinner"></span> 실행 중...';
-            downloadBtn.disabled = true;
+            downloadBtn.disabled = true; // 다운로드 버튼 항상 비활성화로 시작
 
             showStatus('영상 다운로드 및 처리 중... 이 작업은 몇 분 정도 소요될 수 있습니다.', 'processing');
 
@@ -331,19 +356,21 @@
                 
                 if (response.ok) {
                     const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    // The filename is set by the Content-Disposition header on the server
-                    a.download = response.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
+                    
+                    // --- 변경점 4: 서버로부터 받은 파일명과 Blob URL을 전역 변수에 저장 ---
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                        pdfFilename = contentDisposition.split('filename=')[1].replace(/"/g, '');
+                    }
+                    pdfObjectURL = window.URL.createObjectURL(blob);
+                    
+                    // 저장된 정보로 자동 다운로드 1회 실행
+                    triggerDownload(pdfObjectURL, pdfFilename);
 
-                    showStatus('PDF 생성이 완료되었습니다! 다운로드가 시작됩니다.', 'success');
-                    downloadBtn.disabled = false; // Or hide it, since download is automatic
+                    showStatus('PDF 생성이 완료되었습니다! 자동 다운로드가 시작됩니다.', 'success');
+                    
+                    // 다운로드 버튼 활성화
+                    downloadBtn.disabled = false;
 
                 } else {
                     const errorResult = await response.json();
@@ -355,6 +382,16 @@
             } finally {
                 runBtn.disabled = false;
                 runBtn.innerHTML = '▶️ 실행';
+            }
+        });
+
+        // --- 변경점 5: 다운로드 버튼에 클릭 이벤트 리스너 추가 ---
+        downloadBtn.addEventListener('click', function() {
+            if (pdfObjectURL) {
+                // 저장된 URL과 파일명으로 수동 다운로드 실행
+                triggerDownload(pdfObjectURL, pdfFilename);
+            } else {
+                alert('먼저 ‘실행’ 버튼을 눌러 PDF를 생성해주세요.');
             }
         });
 

@@ -21,7 +21,7 @@ def create_pdf_from_images(image_paths: List[str]) -> Union[io.BytesIO, None]:
     pdf_page_width = 210 - 2 * margin
     pdf_page_height = 297 - 2 * margin
     current_y = margin
-    image_spacing = 5  # Space between images in mm
+    image_spacing = 2  # Space between images in mm
 
     for img_path in image_paths:
         try:
