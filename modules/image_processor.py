@@ -1,9 +1,17 @@
+# modules/image_processor.py
+
 import cv2
 import numpy as np
 import os
 from typing import Optional, List
 
-def process_video_frames(video_path: str, output_dir: str, x_start: int, x_end: int, y_start: int, y_end: int, threshold: float, transition_sec: float, frame_interval_sec: float = 0.5) -> List[str]:
+# --- 변경점 1: 함수 정의에 start_time, end_time 추가 ---
+def process_video_frames(
+    video_path: str, output_dir: str, 
+    start_time: Optional[int], end_time: Optional[int], 
+    x_start: int, x_end: int, y_start: int, y_end: int, 
+    threshold: float, transition_sec: float, frame_interval_sec: float = 0.5
+) -> List[str]:
     # Extracts and processes sheet music images from a video, returns a list of image paths.
     print("Starting video processing...")
     cap = cv2.VideoCapture(video_path)
@@ -26,7 +34,10 @@ def process_video_frames(video_path: str, output_dir: str, x_start: int, x_end: 
     if frame_interval_frames < 1:
         frame_interval_frames = 1
 
-    print(f"Analyzing video with duration: {video_duration:.2f}s. Processing one frame every {frame_interval_sec} second(s) ({frame_interval_frames} frames).")
+    # --- 변경점 2: 처리 범위 로그 추가 ---
+    start_log = f"{start_time}s" if start_time is not None else "start"
+    end_log = f"{end_time}s" if end_time is not None else "end"
+    print(f"Analyzing video with duration: {video_duration:.2f}s. Processing range: [{start_log} to {end_log}].")
 
     prev_frame_gray = None
     saved_images = []
@@ -38,6 +49,19 @@ def process_video_frames(video_path: str, output_dir: str, x_start: int, x_end: 
         ret, frame = cap.read()
         if not ret:
             break
+
+        # --- 변경점 3: start_time과 end_time을 기준으로 프레임 처리 여부 결정 ---
+        current_time_sec = frame_number / fps
+
+        # start_time 이전의 프레임은 건너뛰기
+        if start_time is not None and current_time_sec < start_time:
+            frame_number += 1
+            continue
+
+        # end_time 이후의 프레임은 루프 종료
+        if end_time is not None and current_time_sec > end_time:
+            break
+        # --- 여기까지 변경점 3 ---
 
         if frame_number % frame_interval_frames == 0:
             height, width, _ = frame.shape
