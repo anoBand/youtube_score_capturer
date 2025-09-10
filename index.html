@@ -11,8 +11,11 @@
     <meta property="og:description" content="YouTube 영상을 기반으로 악보를 추출하여 개인 학습용으로 제공합니다.">
     <meta property="og:type" content="website">
 
-    <!-- ✅ Google Fonts -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <!-- 요청사항에 적용할 새로운 폰트(IBM Plex Sans KR) 추가 -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+
 
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -43,6 +46,10 @@
             display: flex;
             flex-direction: column;
         }
+        form label {
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
         form input, form textarea {
             margin-bottom: 14px;
             padding: 12px;
@@ -55,6 +62,10 @@
         form input:focus, form textarea:focus {
             border-color: #000;
             box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+        }
+        /* 요청사항(textarea)에만 새로운 폰트 적용 */
+        form textarea#message {
+            font-family: 'IBM Plex Sans KR', sans-serif;
         }
         form button {
             padding: 14px;
@@ -141,8 +152,9 @@
         <div class="section" id="request">
             <h2>악보 추출 요청하기</h2>
             <form action="https://formspree.io/f/xeolnkla" method="POST">
-                <label for="email">답변 받을 카카오톡 프로필 이름 (또는 이메일 주소):</label>
-                <input type="text" id="email" name="email" required>
+                <!-- Formspree 오류 수정을 위해 id, for, name 값을 모두 contact로 변경 -->
+                <label for="contact">답변 받을 카카오톡 프로필 이름 (또는 이메일 주소):</label>
+                <input type="text" id="contact" name="contact" required>
 
                 <label for="youtube_link">추출할 영상 URL:</label>
                 <input type="url" id="youtube_link" name="youtube_link" required>
@@ -184,3 +196,4 @@
 
 </body>
 </html>
+
