@@ -30,10 +30,6 @@ env/
 # 임시 파일들
 music_file_*/
 *.mp4
-*.webm
-*.png
-*.jpg
-*.jpeg
 temp/
 tmp/
 *.md
