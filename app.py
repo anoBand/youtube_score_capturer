@@ -1,4 +1,4 @@
-# application.py
+# app.py
 
 import os
 import tempfile
@@ -7,8 +7,6 @@ import traceback
 from flask import Flask, request, render_template, send_file, jsonify
 from flask_cors import CORS
 
-from werkzeug.middleware.proxy_fix import ProxyFix
-
 # --- 변경점 1: FFmpeg 없는 다운로더 함수를 임포트 ---
 # (함수 이름은 최종 결정한 이름으로 맞춰주세요. 예: download_1080p_video_only)
 from modules.youtube_downloader import download_1080p_video_only as download_youtube_video
@@ -16,20 +14,15 @@ from modules.image_processor import process_video_frames
 from modules.pdf_generator import create_pdf_from_images
 
 
-# Beanstalk looks for a variable named 'application'.
-application = Flask(__name__)
-# --- 변경점 2: ProxyFix 미들웨어 적용 ---
-# 이 코드는 Beanstalk의 로드 밸런서 뒤에서 실행될 때,
-# Flask가 X-Forwarded-Proto 같은 헤더를 신뢰하여 HTTPS 환경임을 인지하게 만듭니다.
-application.wsgi_app = ProxyFix(application.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-
-CORS(application)
+# Flask app object
+app = Flask(__name__)
+CORS(app)
 
 # Define a base temp directory within the project
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 TEMP_BASE_DIR = os.path.join(PROJECT_ROOT, 'temp')
 
-@application.route('/')
+@app.route('/')
 def index():
     # Renders the main page.
     return render_template('index.html')
@@ -48,7 +41,7 @@ def time_to_seconds(time_str):
     except (ValueError, IndexError):
         return None
 
-@application.route('/execute', methods=['POST'])
+@app.route('/execute', methods=['POST'])
 def execute():
     if os.path.exists(TEMP_BASE_DIR):
         shutil.rmtree(TEMP_BASE_DIR)
@@ -118,4 +111,4 @@ def execute():
             print(f"Cleaned up temporary directory: {temp_dir}")
 
 if __name__ == '__main__':
-    application.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
