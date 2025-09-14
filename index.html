@@ -5,19 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube 악보 추출 프로젝트</title>
 
-    <!-- SEO 및 SNS 공유 메타태그 -->
     <meta name="description" content="YouTube 영상을 기반으로 악보를 추출하여 개인 학습용으로 제공합니다. 간단한 요청 폼으로 신청하세요.">
     <meta property="og:title" content="YouTube 악보 추출 프로젝트">
     <meta property="og:description" content="YouTube 영상을 기반으로 악보를 추출하여 개인 학습용으로 제공합니다.">
     <meta property="og:type" content="website">
 
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <!-- 요청사항에 적용할 새로운 폰트(IBM Plex Sans KR) 추가 -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
 
-
-    <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
     <style>
@@ -83,17 +78,23 @@
             color: #000;
             border: 1px solid #000;
         }
+
+        /* ----- 🔄 수정된 부분 시작 ----- */
         .swiper {
             width: 100%;
-            height: 320px;
+            /* height: 320px; <-- 이 줄을 삭제 */
+            aspect-ratio: 16 / 9; /* <-- 너비에 맞춰 높이가 자동 조절되도록 비율 추가 */
             border-radius: 16px;
             overflow: hidden;
+            background-color: #f0f0f0; /* 이미지가 contain될 때 남는 여백 색상 */
         }
         .swiper-slide img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain; /* <-- cover에서 contain으로 변경하여 이미지가 잘리지 않게 함 */
         }
+        /* ----- 🔄 수정된 부분 끝 ----- */
+
         #copyright {
             padding: 15px;
             background-color: #fafafa;
@@ -152,7 +153,6 @@
         <div class="section" id="request">
             <h2>악보 추출 요청하기</h2>
             <form action="https://formspree.io/f/xeolnkla" method="POST">
-                <!-- Formspree 오류 수정을 위해 id, for, name 값을 모두 contact로 변경 -->
                 <label for="contact">답변 받을 카카오톡 프로필 이름 (또는 이메일 주소):</label>
                 <input type="text" id="contact" name="contact" required>
 
@@ -196,4 +196,3 @@
 
 </body>
 </html>
-
