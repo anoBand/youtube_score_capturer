@@ -6,9 +6,6 @@ import shutil
 import traceback
 from flask import Flask, request, render_template, send_file, jsonify
 from flask_cors import CORS
-
-# --- 변경점 1: FFmpeg 없는 다운로더 함수를 임포트 ---
-# (함수 이름은 최종 결정한 이름으로 맞춰주세요. 예: download_1080p_video_only)
 from modules.youtube_downloader import download_1080p_video_only as download_youtube_video
 from modules.image_processor import process_video_frames
 from modules.pdf_generator import create_pdf_from_images
@@ -67,23 +64,21 @@ def execute():
         transition_sec = float(data.get('transition_sec') or 2.0)
         frame_interval_sec = float(data.get('frame_interval_sec') or 1.0)
 
-        # --- 변경점 2: 다운로더 호출 시 start_time, end_time 제거 ---
-        # 이제 동영상 전체를 다운로드합니다.
         print("Step 1: Downloading full video (up to 1080p, no-ffmpeg)...")
         video_path = download_youtube_video(youtube_url, temp_dir)
+        if not video_path or not os.path.exists(video_path):
+            raise ValueError("Failed to download video. Please check the URL and network.")
         
-        # --- 변경점 3: 이미지 프로세서 호출 시 start_time, end_time 추가 ---
-        # 다운로드된 전체 영상에서 필요한 부분만 처리합니다.
         print("Step 2: Processing frames within the specified time range...")
         image_output_dir = os.path.join(temp_dir, 'images')
         os.makedirs(image_output_dir)
         processed_image_paths = process_video_frames(
-            video_path, 
-            image_output_dir, 
-            start_time, # 역할이 여기로 이동
-            end_time,   # 역할이 여기로 이동
-            x_start, x_end, y_start, y_end, 
-            threshold, transition_sec, frame_interval_sec
+            video_path,
+            image_output_dir,
+            start_time, end_time,
+            x_start, x_end, y_start, y_end,
+            threshold,
+            frame_interval_sec
         )
         
         if not processed_image_paths:

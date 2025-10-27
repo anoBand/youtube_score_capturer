@@ -5,12 +5,13 @@ import numpy as np
 import os
 from typing import Optional, List
 
-# --- 변경점 1: 함수 정의에 start_time, end_time 추가 ---
+
+# --- 변경점: 사용되지 않는 transition_sec 파라미터 제거 ---
 def process_video_frames(
-    video_path: str, output_dir: str, 
-    start_time: Optional[int], end_time: Optional[int], 
-    x_start: int, x_end: int, y_start: int, y_end: int, 
-    threshold: float, transition_sec: float, frame_interval_sec: float = 1.0
+        video_path: str, output_dir: str,
+        start_time: Optional[int], end_time: Optional[int],
+        x_start: int, x_end: int, y_start: int, y_end: int,
+        threshold: float, frame_interval_sec: float = 1.0
 ) -> List[str]:
     # Extracts and processes sheet music images from a video, returns a list of image paths.
     print("Starting video processing...")
@@ -24,22 +25,24 @@ def process_video_frames(
     y_start_percent = y_start / 100.0
     y_end_percent = y_end / 100.0
 
+    # (선택적 개선) 시작/끝 좌표 유효성 검사
+    if x_start_percent >= x_end_percent or y_start_percent >= y_end_percent:
+        raise ValueError("Start coordinate must be less than end coordinate.")
+
     fps = cap.get(cv2.CAP_PROP_FPS)
     if fps == 0:
-        fps = 30 # Assume a default fps
-        
+        fps = 30  # Assume a default fps
+
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     video_duration = total_frames / fps if fps > 0 else 0
     frame_interval_frames = int(fps * frame_interval_sec)
     if frame_interval_frames < 1:
         frame_interval_frames = 1
 
-    # --- 변경점 2: 처리 범위 로그 추가 ---
     start_log = f"{start_time}s" if start_time is not None else "start"
     end_log = f"{end_time}s" if end_time is not None else "end"
     print(f"Analyzing video with duration: {video_duration:.2f}s. Processing range: [{start_log} to {end_log}].")
 
-    prev_frame_gray = None
     saved_images = []
     processed_image_paths = []
     last_saved_frame_gray = None
@@ -50,18 +53,14 @@ def process_video_frames(
         if not ret:
             break
 
-        # --- 변경점 3: start_time과 end_time을 기준으로 프레임 처리 여부 결정 ---
         current_time_sec = frame_number / fps
 
-        # start_time 이전의 프레임은 건너뛰기
         if start_time is not None and current_time_sec < start_time:
             frame_number += 1
             continue
 
-        # end_time 이후의 프레임은 루프 종료
         if end_time is not None and current_time_sec > end_time:
             break
-        # --- 여기까지 변경점 3 ---
 
         if frame_number % frame_interval_frames == 0:
             height, width, _ = frame.shape
@@ -72,15 +71,15 @@ def process_video_frames(
                 int(height * y_end_percent)
             )
             cropped_frame = frame[crop_rect[2]:crop_rect[3], crop_rect[0]:crop_rect[1]]
-            
+
             if cropped_frame.size == 0:
                 frame_number += 1
                 continue
-                
+
             gray_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
 
-            if prev_frame_gray is None:
-                prev_frame_gray = gray_frame
+            # --- 변경점: prev_frame_gray 대신 last_saved_frame_gray로 첫 프레임 판별 ---
+            if last_saved_frame_gray is None:
                 last_saved_frame_gray = gray_frame
                 img_path = os.path.join(output_dir, f'frame_{len(saved_images):04d}.png')
                 cv2.imwrite(img_path, cropped_frame)
@@ -96,8 +95,6 @@ def process_video_frames(
                     cv2.imwrite(img_path, cropped_frame)
                     saved_images.append(cropped_frame)
                     processed_image_paths.append(img_path)
-
-            prev_frame_gray = gray_frame
 
         frame_number += 1
 
