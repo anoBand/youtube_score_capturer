@@ -4,16 +4,36 @@ import os
 import tempfile
 import shutil
 import traceback
+import subprocess  # 1. subprocess 임포트
+import sys         # 2. sys 임포트
 from flask import Flask, request, render_template, send_file, jsonify
 from flask_cors import CORS
 from modules.youtube_downloader import download_1080p_video_only as download_youtube_video
 from modules.image_processor import process_video_frames
 from modules.pdf_generator import create_pdf_from_images
 
+def update_yt_dlp():
+    """Checks and updates yt-dlp to the latest version using pip."""
+    print("Checking for yt-dlp updates...")
+    try:
+        # sys.executable은 현재 실행 중인 파이썬의 경로 (venv 안의 파이썬)
+        # --upgrade 옵션은 최신 버전이 아닐 때만 설치를 진행함
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
+            stdout=subprocess.DEVNULL, # 성공 메시지는 숨김
+            stderr=subprocess.DEVNULL  # 오류 메시지도 숨김 (네트워크 오류 등)
+        )
+        print("✅ yt-dlp is up-to-date.")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Failed to update yt-dlp: {e}")
+    except Exception as e:
+        print(f"⚠️ An error occurred during yt-dlp update check: {e}")
 
 # Flask app object
 app = Flask(__name__)
 CORS(app)
+
+update_yt_dlp()
 
 # Define a base temp directory within the project
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))

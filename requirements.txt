@@ -1,3 +1,4 @@
+opencv-python
 Flask>=2.0.0
 flask-cors
 yt-dlp
