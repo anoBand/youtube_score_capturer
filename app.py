@@ -14,6 +14,8 @@ from modules.youtube_downloader import download_1080p_video_only as download_you
 from modules.image_processor import process_video_frames
 from modules.pdf_generator import create_pdf_from_images
 
+from modules.youtube_downloader import get_video_stream_url
+from modules.image_processor import get_single_frame_as_bytes
 
 def update_yt_dlp():
     """서버 시작 시 yt-dlp 라이브러리를 최신 상태로 업데이트합니다."""
@@ -40,8 +42,6 @@ TEMP_BASE_DIR = os.path.join(PROJECT_ROOT, 'temp')
 if not os.path.exists(TEMP_BASE_DIR):
     os.makedirs(TEMP_BASE_DIR)
 
-update_yt_dlp()
-
 
 def time_to_seconds(time_str):
     """HH:MM:SS 또는 MM:SS 형식을 초(seconds) 단위로 변환합니다."""
@@ -62,7 +62,35 @@ def time_to_seconds(time_str):
 def index():
     return render_template('index.html')
 
+# [변경점] 항목 4: 프레임 가져오기 라우트
+@app.route('/get_frame', methods=['POST'])
+def get_frame():
+    url = request.form.get('url')
+    time_str = request.form.get('start_time')
 
+    if not url:
+        return jsonify({'error': 'URL이 필요합니다.'}), 400
+
+    # 1. 초 단위 변환
+    seconds = time_to_seconds(time_str) or 0
+
+    try:
+        # 2. Downloader에게 주소 요청
+        stream_url = get_video_stream_url(url)
+        if not stream_url:
+            return jsonify({'error': '영상 주소를 찾을 수 없습니다.'}), 400
+
+        # 3. Processor에게 이미지 데이터(BytesIO) 요청
+        image_bytes = get_single_frame_as_bytes(stream_url, seconds)
+
+        if image_bytes:
+            # 4. 완성된 데이터를 그대로 반환
+            return send_file(image_bytes, mimetype='image/jpeg')
+        else:
+            return jsonify({'error': '이미지를 생성할 수 없습니다.'}), 500
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 @app.route('/execute', methods=['POST'])
 def execute():
     # 각 요청마다 독립적인 임시 디렉터리 생성 (Race Condition 방지)
@@ -132,7 +160,7 @@ def execute():
             shutil.rmtree(temp_dir)
             print(f"Cleaned up directory: {temp_dir}")
 
-
 if __name__ == '__main__':
+    update_yt_dlp()
     # 외부 접속을 허용하려면 host='0.0.0.0' 추가 고려
     app.run(debug=True, port=5000)

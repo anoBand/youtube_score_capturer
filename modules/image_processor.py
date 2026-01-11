@@ -1,6 +1,7 @@
 # modules/image_processor.py
 
 import cv2
+import io
 import numpy as np
 import os
 from typing import Optional, List
@@ -75,3 +76,24 @@ def process_video_frames(
 
     print(f"✅ Extracted {len(processed_image_paths)} images.")
     return processed_image_paths
+
+def get_single_frame_as_bytes(stream_url, time_sec):
+    """스트림 주소에서 특정 시점의 프레임을 캡처하여 BytesIO 객체로 반환합니다."""
+    cap = cv2.VideoCapture(stream_url)
+    if not cap.isOpened():
+        return None
+
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    cap.set(cv2.CAP_PROP_POS_FRAMES, int(time_sec * fps))
+
+    ret, frame = cap.read()
+    cap.release()
+
+    if ret:
+        # 이미지를 JPG 형식으로 인코딩
+        success, buffer = cv2.imencode('.jpg', frame)
+        if success:
+            # Flask의 send_file이 바로 읽을 수 있도록 BytesIO로 래핑
+            return io.BytesIO(buffer)
+
+    return None

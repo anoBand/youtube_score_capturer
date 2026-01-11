@@ -4,6 +4,7 @@ const selectionArea = document.getElementById('selectionArea');
 const videoPreview = document.getElementById('videoPreview');
 const urlInput = document.getElementById('url');
 const coordTypes = ['x_start', 'x_end', 'y_start', 'y_end'];
+const startTimeInput = document.getElementById('start_time');
 
 // --- [항목 3] 유튜브 썸네일 로드 로직 ---
 function extractVideoId(url) {
@@ -39,6 +40,47 @@ coordTypes.forEach(type => {
         rangeInput.value = e.target.value;
         updatePreview();
     });
+});
+
+// [항목 4] 실시간 프레임 요청 함수
+async function fetchCurrentFrame() {
+    const url = urlInput.value;
+    const startTime = startTimeInput.value;
+
+    const videoId = extractVideoId(url);
+    if (!videoId) return;
+
+    // 사용자에게 로딩 중임을 알림 (투명도 조절 등)
+    videoPreview.style.opacity = '0.5';
+
+    const formData = new FormData();
+    formData.append('url', url);
+    formData.append('start_time', startTime);
+
+    try {
+        const response = await fetch('/get_frame', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const frameUrl = window.URL.createObjectURL(blob);
+            videoPreview.style.backgroundImage = `url('${frameUrl}')`;
+        }
+    } catch (error) {
+        console.error('프레임 로드 실패:', error);
+    } finally {
+        videoPreview.style.opacity = '1';
+    }
+}
+
+// 시작 시간 입력 칸에서 포커스가 나갈 때(blur) 또는 엔터 칠 때 프레임 갱신
+startTimeInput.addEventListener('change', fetchCurrentFrame);
+
+// URL이 입력된 상태에서 시간이 이미 있다면 초기 로드
+urlInput.addEventListener('blur', () => {
+    if (startTimeInput.value) fetchCurrentFrame();
 });
 
 function updatePreview() {

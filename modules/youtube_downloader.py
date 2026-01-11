@@ -49,3 +49,18 @@ def download_1080p_video_only(url, output_dir):
     except Exception as e:
         print(f"❌ Unexpected Error during download: {str(e)}")
         return None
+
+def get_video_stream_url(youtube_url):
+    """영상을 다운로드하지 않고 OpenCV가 읽을 수 있는 스트리밍 URL만 반환합니다."""
+    ydl_opts = {
+        'format': 'bestvideo[height<=480][ext=mp4]/bestvideo[height<=480]', # 빠른 로딩을 위해 저화질 선택
+        'quiet': True,
+        'no_warnings': True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=False)
+            return info['url']
+    except Exception as e:
+        print(f"Error fetching stream URL: {e}")
+        return None
