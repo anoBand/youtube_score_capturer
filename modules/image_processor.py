@@ -5,99 +5,73 @@ import numpy as np
 import os
 from typing import Optional, List
 
-
-# --- 변경점: 사용되지 않는 transition_sec 파라미터 제거 ---
 def process_video_frames(
         video_path: str, output_dir: str,
         start_time: Optional[int], end_time: Optional[int],
         x_start: int, x_end: int, y_start: int, y_end: int,
         threshold: float, frame_interval_sec: float = 1.0
 ) -> List[str]:
-    # Extracts and processes sheet music images from a video, returns a list of image paths.
-    print("Starting video processing...")
+    print("🚀 Starting optimized video processing...")
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise IOError("Cannot open video file.")
 
-    # Convert percentages to ratios
-    x_start_percent = x_start / 100.0
-    x_end_percent = x_end / 100.0
-    y_start_percent = y_start / 100.0
-    y_end_percent = y_end / 100.0
+    try:
+        # [기존] 좌표 변환 로직 동일
+        x_start_p, x_end_p = x_start / 100.0, x_end / 100.0
+        y_start_p, y_end_p = y_start / 100.0, y_end / 100.0
 
-    # (선택적 개선) 시작/끝 좌표 유효성 검사
-    if x_start_percent >= x_end_percent or y_start_percent >= y_end_percent:
-        raise ValueError("Start coordinate must be less than end coordinate.")
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps == 0:
-        fps = 30  # Assume a default fps
+        # 시작 시간 설정 (Seeking)
+        current_frame = int(start_time * fps) if start_time else 0
+        end_frame = int(end_time * fps) if end_time else total_frames
+        frame_step = int(fps * frame_interval_sec) or 1
 
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    video_duration = total_frames / fps if fps > 0 else 0
-    frame_interval_frames = int(fps * frame_interval_sec)
-    if frame_interval_frames < 1:
-        frame_interval_frames = 1
+        processed_image_paths = []
+        last_saved_frame_gray = None
+        MAX_IMAGES = 200  # [개선] 서버 보호를 위한 최대 이미지 생성 제한
 
-    start_log = f"{start_time}s" if start_time is not None else "start"
-    end_log = f"{end_time}s" if end_time is not None else "end"
-    print(f"Analyzing video with duration: {video_duration:.2f}s. Processing range: [{start_log} to {end_log}].")
+        while current_frame < end_frame:
+            # [개선] 다음 처리할 프레임으로 바로 점프 (성능 향상의 핵심)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
+            ret, frame = cap.read()
+            if not ret: break
 
-    saved_images = []
-    processed_image_paths = []
-    last_saved_frame_gray = None
-
-    frame_number = 0
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        current_time_sec = frame_number / fps
-
-        if start_time is not None and current_time_sec < start_time:
-            frame_number += 1
-            continue
-
-        if end_time is not None and current_time_sec > end_time:
-            break
-
-        if frame_number % frame_interval_frames == 0:
-            height, width, _ = frame.shape
-            crop_rect = (
-                int(width * x_start_percent),
-                int(width * x_end_percent),
-                int(height * y_start_percent),
-                int(height * y_end_percent)
-            )
-            cropped_frame = frame[crop_rect[2]:crop_rect[3], crop_rect[0]:crop_rect[1]]
-
-            if cropped_frame.size == 0:
-                frame_number += 1
+            # [기존] 크롭 및 그레이스케일 변환 로직 동일
+            h, w, _ = frame.shape
+            cropped = frame[int(h * y_start_p):int(h * y_end_p), int(w * x_start_p):int(w * x_end_p)]
+            if cropped.size == 0:
+                current_frame += frame_step
                 continue
 
-            gray_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
 
-            # --- 변경점: prev_frame_gray 대신 last_saved_frame_gray로 첫 프레임 판별 ---
+            # 변화량 체크 로직
+            should_save = False
             if last_saved_frame_gray is None:
-                last_saved_frame_gray = gray_frame
-                img_path = os.path.join(output_dir, f'frame_{len(saved_images):04d}.png')
-                cv2.imwrite(img_path, cropped_frame)
-                saved_images.append(cropped_frame)
-                processed_image_paths.append(img_path)
+                should_save = True
             else:
-                diff_with_last_saved = cv2.absdiff(last_saved_frame_gray, gray_frame)
-                mean_diff = np.mean(diff_with_last_saved)
+                diff = cv2.absdiff(last_saved_frame_gray, gray)
+                if np.mean(diff) > threshold:
+                    should_save = True
 
-                if mean_diff > threshold:
-                    last_saved_frame_gray = gray_frame
-                    img_path = os.path.join(output_dir, f'frame_{len(saved_images):04d}.png')
-                    cv2.imwrite(img_path, cropped_frame)
-                    saved_images.append(cropped_frame)
-                    processed_image_paths.append(img_path)
+            if should_save:
+                img_path = os.path.join(output_dir, f'frame_{len(processed_image_paths):04d}.png')
+                cv2.imwrite(img_path, cropped)
+                processed_image_paths.append(img_path)
+                last_saved_frame_gray = gray
 
-        frame_number += 1
+                # [개선] 무한 이미지 생성 방지
+                if len(processed_image_paths) >= MAX_IMAGES:
+                    print(f"⚠️ Reached max image limit ({MAX_IMAGES}). Stopping.")
+                    break
 
-    cap.release()
-    print(f"Extracted {len(processed_image_paths)} images.")
+            current_frame += frame_step
+
+    finally:
+        cap.release()  # [개선] 어떤 상황에서도 리소스 해제 보장
+
+    print(f"✅ Extracted {len(processed_image_paths)} images.")
     return processed_image_paths

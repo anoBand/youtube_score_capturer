@@ -3,415 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube 음악 추출기</title>
+    <title>YouTube 악보 추출기</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* 이전 스타일 유지 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .form-container { padding: 40px; }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 0.95em; }
+        .form-group input { width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 16px; background: #f8f9fa; transition: 0.3s; }
+        .form-group input:focus { outline: none; border-color: #667eea; background: white; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+        /* 프리뷰 박스 */
+        .preview-wrapper { background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #dee2e6; }
+        .video-preview { width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; border-radius: 5px; overflow: hidden; }
+        .selection-area { position: absolute; border: 2px solid #ff0; background: rgba(255, 255, 0, 0.2); transition: 0.2s; }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .range-label { font-size: 0.8em; color: #666; margin-top: 5px; text-align: center; }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+        .button-group { display: flex; gap: 15px; margin-top: 30px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+        .btn-run { background: linear-gradient(135deg, #007bff, #6610f2); color: white; }
+        .btn-download { background: linear-gradient(135deg, #fd7e14, #e83e8c); color: white; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
+        .status-area { margin-top: 30px; padding: 20px; border-radius: 10px; display: none; border-left: 4px solid #667eea; }
+        .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .form-container {
-            padding: 40px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-            font-size: 0.95em;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .form-row-4 {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-save {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-        }
-
-        .btn-save:hover {
-            background: linear-gradient(135deg, #218838, #1ea384);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
-        }
-
-        .btn-run {
-            background: linear-gradient(135deg, #007bff, #6610f2);
-            color: white;
-        }
-
-        .btn-run:hover {
-            background: linear-gradient(135deg, #0056b3, #520dc2);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
-        }
-
-        .btn-download {
-            background: linear-gradient(135deg, #fd7e14, #e83e8c);
-            color: white;
-        }
-
-        .btn-download:hover {
-            background: linear-gradient(135deg, #e8630a, #d91a72);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(253, 126, 20, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-
-        .status-area {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-
-        .status-message {
-            font-size: 16px;
-            color: #495057;
-            margin: 0;
-        }
-
-        .status-success {
-            border-left-color: #28a745;
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-error {
-            border-left-color: #dc3545;
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-processing {
-            border-left-color: #ffc107;
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .help-text {
-            font-size: 0.85em;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-
-        @media (max-width: 768px) {
-            .form-row,
-            .form-row-4 {
-                grid-template-columns: 1fr;
-            }
-            
-            .button-group {
-                flex-direction: column;
-            }
-            
-            .container {
-                margin: 10px;
-            }
-            
-            .form-container {
-                padding: 20px;
-            }
-        }
+        @media (max-width: 768px) { .form-row, .form-row-4 { grid-template-columns: 1fr; } .button-group { flex-direction: column; } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>YouTube 음악 추출기</h1>
-            <p>YouTube 동영상에서 음악을 추출하고 다운로드하세요</p>
+            <h1>YouTube 악보 추출기</h1>
+            <p>영역과 시간을 지정하여 악보를 PDF로 변환하세요</p>
         </div>
-        
+
         <div class="form-container">
             <form id="configForm">
                 <div class="form-group">
                     <label for="url">YouTube URL *</label>
                     <input type="url" id="url" name="url" required placeholder="https://www.youtube.com/watch?v=...">
-                    <div class="help-text">추출할 YouTube 동영상의 URL을 입력하세요</div>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="start_time">시작 시간</label>
-                        <input type="text" id="start_time" name="start_time" placeholder="0 또는 mm:ss">
-                        <div class="help-text">시작 지점 (기본: 처음부터)</div>
+                <div class="preview-wrapper">
+                    <div class="video-preview" id="videoPreview">
+                        <div class="selection-area" id="selectionArea"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="end_time">종료 시간</label>
-                        <input type="text" id="end_time" name="end_time" placeholder="mm:ss 또는 비워두기">
-                        <div class="help-text">종료 지점 (기본: 끝까지)</div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="threshold">임계값</label>
-                        <input type="number" id="threshold" name="threshold" step="0.1" placeholder="5.0">
-                        <div class="help-text">프레임 비교 임계값 (기본: 5.0)</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="transition_sec">전환 안정화 시간</label>
-                        <input type="number" id="transition_sec" name="transition_sec" step="0.1" placeholder="2.0">
-                        <div class="help-text">전환 안정화 시간 (초, 기본: 2.0)</div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="frame_interval_sec">프레임 처리 간격 (초)</label>
-                        <input type="number" id="frame_interval_sec" name="frame_interval_sec" step="0.1" placeholder="1.0">
-                        <div class="help-text">N초 마다 한 프레임씩 처리 (기본: 1.0)</div>
-                    </div>
+                    <p style="text-align: center; font-size: 0.85em; color: #666; margin-top: 10px;">노란색 영역 내의 변화를 감지하여 추출합니다</p>
                 </div>
 
                 <div class="form-row-4">
                     <div class="form-group">
-                        <label for="x_start">X 시작 (%)</label>
-                        <input type="number" id="x_start" name="x_start" min="0" max="100" placeholder="0">
+                        <label>X 시작 (%)</label>
+                        <input type="range" id="x_start" name="x_start" min="0" max="100" value="0">
+                        <div class="range-label"><span id="v_x_start">0</span>%</div>
                     </div>
                     <div class="form-group">
-                        <label for="x_end">X 끝 (%)</label>
-                        <input type="number" id="x_end" name="x_end" min="0" max="100" placeholder="100">
+                        <label>X 끝 (%)</label>
+                        <input type="range" id="x_end" name="x_end" min="0" max="100" value="100">
+                        <div class="range-label"><span id="v_x_end">100</span>%</div>
                     </div>
                     <div class="form-group">
-                        <label for="y_start">Y 시작 (%)</label>
-                        <input type="number" id="y_start" name="y_start" min="0" max="100" placeholder="0">
+                        <label>Y 시작 (%)</label>
+                        <input type="range" id="y_start" name="y_start" min="0" max="100" value="0">
+                        <div class="range-label"><span id="v_y_start">0</span>%</div>
                     </div>
                     <div class="form-group">
-                        <label for="y_end">Y 끝 (%)</label>
-                        <input type="number" id="y_end" name="y_end" min="0" max="100" placeholder="100">
+                        <label>Y 끝 (%)</label>
+                        <input type="range" id="y_end" name="y_end" min="0" max="100" value="100">
+                        <div class="range-label"><span id="v_y_end">100</span>%</div>
                     </div>
-                </div>
-                <div class="help-text" style="margin-top: -15px; margin-bottom: 20px;">
-                    잘라낼 영역의 퍼센트를 지정하세요 (기본: X 0-100%, Y 0-100%)
                 </div>
 
-                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_time">시작 시간 (mm:ss)</label>
+                        <input type="text" id="start_time" name="start_time" placeholder="00:00 (미입력 시 처음부터)">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_time">종료 시간 (mm:ss)</label>
+                        <input type="text" id="end_time" name="end_time" placeholder="mm:ss (미입력 시 끝까지)">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="threshold">감도 (Threshold)</label>
+                        <input type="number" id="threshold" name="threshold" step="0.1" value="5.0">
+                    </div>
+                    <div class="form-group">
+                        <label for="frame_interval_sec">처리 간격 (초)</label>
+                        <input type="number" id="frame_interval_sec" name="frame_interval_sec" step="0.1" value="1.0">
+                    </div>
+                </div>
 
                 <div class="button-group">
                     <button type="submit" id="runBtn" class="btn btn-run">▶️ 실행</button>
                     <button type="button" id="downloadBtn" class="btn btn-download" disabled>📥 다운로드</button>
                 </div>
-                
             </form>
 
-            <div class="status-area" id="statusArea" style="display: none;">
-                <p class="status-message" id="statusMessage"></p>
+            <div class="status-area" id="statusArea">
+                <p id="statusMessage"></p>
             </div>
         </div>
     </div>
 
-<script>
-        // --- 변경점 1: 생성된 PDF 데이터의 주소와 파일명을 저장할 변수 추가 ---
-        let pdfObjectURL = null;
-        let pdfFilename = 'sheet_music.pdf'; // 기본 파일명
+    <script>
+        // 프리뷰 업데이트 로직
+        const selectionArea = document.getElementById('selectionArea');
+        const rangeInputs = ['x_start', 'x_end', 'y_start', 'y_end'];
 
+        function updatePreview() {
+            const vals = {};
+            rangeInputs.forEach(id => {
+                const val = parseInt(document.getElementById(id).value);
+                vals[id] = val;
+                document.getElementById('v_' + id).innerText = val;
+            });
+
+            selectionArea.style.left = vals.x_start + '%';
+            selectionArea.style.top = vals.y_start + '%';
+            selectionArea.style.width = Math.max(0, vals.x_end - vals.x_start) + '%';
+            selectionArea.style.height = Math.max(0, vals.y_end - vals.y_start) + '%';
+        }
+
+        rangeInputs.forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
+        updatePreview();
+
+        // 통신 로직
+        let pdfObjectURL = null;
         const configForm = document.getElementById('configForm');
         const runBtn = document.getElementById('runBtn');
         const downloadBtn = document.getElementById('downloadBtn');
 
-        // --- 변경점 2: 다운로드 로직을 별도 함수로 분리 ---
-        function triggerDownload(url, filename) {
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            // 자동 다운로드 후에는 revokeObjectURL을 호출하지 않아야 수동 다운로드가 가능합니다.
-            // 대신, 새 실행 시 기존 URL을 폐기합니다.
-            document.body.removeChild(a);
-        }
-
         configForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            // --- 변경점 3: 새 실행 시 이전 PDF 데이터 정보 초기화 ---
-            if (pdfObjectURL) {
-                window.URL.revokeObjectURL(pdfObjectURL); // 이전 URL 메모리에서 해제
-                pdfObjectURL = null;
-            }
+            if (pdfObjectURL) window.URL.revokeObjectURL(pdfObjectURL);
 
             runBtn.disabled = true;
-            runBtn.innerHTML = '<span class="loading-spinner"></span> 실행 중...';
-            downloadBtn.disabled = true; // 다운로드 버튼 항상 비활성화로 시작
+            runBtn.innerHTML = '<span class="loading-spinner"></span> 처리 중...';
+            showStatus('영상을 분석하여 악보를 추출하고 있습니다. 잠시만 기다려주세요.', 'processing');
 
-            showStatus('영상 다운로드 및 처리 중... 이 작업은 몇 분 정도 소요될 수 있습니다.', 'processing');
-
-            const formData = new FormData(this);
-            
             try {
-                const response = await fetch('/execute', {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                // FormData를 사용하면 name 속성이 있는 모든 input이 자동으로 포함됩니다.
+                const response = await fetch('/execute', { method: 'POST', body: new FormData(this) });
+
                 if (response.ok) {
                     const blob = await response.blob();
-                    
-                    // --- 변경점 4: 서버로부터 받은 파일명과 Blob URL을 전역 변수에 저장 ---
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
-                        pdfFilename = contentDisposition.split('filename=')[1].replace(/"/g, '');
-                    }
                     pdfObjectURL = window.URL.createObjectURL(blob);
-                    
-                    // 저장된 정보로 자동 다운로드 1회 실행
-                    triggerDownload(pdfObjectURL, pdfFilename);
-
-                    showStatus('PDF 생성이 완료되었습니다! 자동 다운로드가 시작됩니다.', 'success');
-                    
-                    // 다운로드 버튼 활성화
                     downloadBtn.disabled = false;
+                    showStatus('PDF 생성이 완료되었습니다!', 'success');
 
+                    // 자동 다운로드 트리거
+                    const a = document.createElement('a');
+                    a.href = pdfObjectURL;
+                    a.download = 'sheet_music_score.pdf';
+                    a.click();
                 } else {
-                    const errorResult = await response.json();
-                    showStatus(`오류가 발생했습니다: ${errorResult.error}`, 'error');
+                    const err = await response.json();
+                    showStatus('실패: ' + (err.error || '알 수 없는 오류'), 'error');
                 }
-
             } catch (error) {
-                showStatus('실행 중 예측하지 못한 오류가 발생했습니다: ' + error.message, 'error');
+                showStatus('서버 연결에 실패했습니다: ' + error.message, 'error');
             } finally {
                 runBtn.disabled = false;
                 runBtn.innerHTML = '▶️ 실행';
             }
         });
 
-        // --- 변경점 5: 다운로드 버튼에 클릭 이벤트 리스너 추가 ---
-        downloadBtn.addEventListener('click', function() {
-            if (pdfObjectURL) {
-                // 저장된 URL과 파일명으로 수동 다운로드 실행
-                triggerDownload(pdfObjectURL, pdfFilename);
-            } else {
-                alert('먼저 ‘실행’ 버튼을 눌러 PDF를 생성해주세요.');
-            }
+        downloadBtn.addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = pdfObjectURL;
+            a.download = 'sheet_music_score.pdf';
+            a.click();
         });
 
-        function showStatus(message, type = 'info') {
-            const statusArea = document.getElementById('statusArea');
-            const statusMessage = document.getElementById('statusMessage');
-            
-            statusArea.className = 'status-area';
-            statusMessage.innerHTML = message;
-
-            if (type === 'success') {
-                statusArea.classList.add('status-success');
-            } else if (type === 'error') {
-                statusArea.classList.add('status-error');
-            } else if (type === 'processing') {
-                statusArea.classList.add('status-processing');
-                statusMessage.innerHTML = '<span class="loading-spinner"></span> ' + message;
-            }
-            
-            statusArea.style.display = 'block';
+        function showStatus(msg, type) {
+            const area = document.getElementById('statusArea');
+            area.style.display = 'block';
+            area.style.background = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#fff3cd';
+            document.getElementById('statusMessage').innerHTML =
+                (type === 'processing' ? '<span class="loading-spinner"></span> ' : '') + msg;
         }
     </script>
 </body>
