@@ -4,39 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube 악보 추출기</title>
-    <style>
-        /* 이전 스타일 유지 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-        .form-container { padding: 40px; }
-        .form-group { margin-bottom: 25px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 0.95em; }
-        .form-group input { width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 16px; background: #f8f9fa; transition: 0.3s; }
-        .form-group input:focus { outline: none; border-color: #667eea; background: white; }
-
-        /* 프리뷰 박스 */
-        .preview-wrapper { background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #dee2e6; }
-        .video-preview { width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; border-radius: 5px; overflow: hidden; }
-        .selection-area { position: absolute; border: 2px solid #ff0; background: rgba(255, 255, 0, 0.2); transition: 0.2s; }
-
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .form-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .range-label { font-size: 0.8em; color: #666; margin-top: 5px; text-align: center; }
-
-        .button-group { display: flex; gap: 15px; margin-top: 30px; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
-        .btn-run { background: linear-gradient(135deg, #007bff, #6610f2); color: white; }
-        .btn-download { background: linear-gradient(135deg, #fd7e14, #e83e8c); color: white; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .status-area { margin-top: 30px; padding: 20px; border-radius: 10px; display: none; border-left: 4px solid #667eea; }
-        .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media (max-width: 768px) { .form-row, .form-row-4 { grid-template-columns: 1fr; } .button-group { flex-direction: column; } }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') if not debug else 'style.css' }}">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
@@ -56,40 +25,47 @@
                     <div class="video-preview" id="videoPreview">
                         <div class="selection-area" id="selectionArea"></div>
                     </div>
-                    <p style="text-align: center; font-size: 0.85em; color: #666; margin-top: 10px;">노란색 영역 내의 변화를 감지하여 추출합니다</p>
                 </div>
 
                 <div class="form-row-4">
                     <div class="form-group">
                         <label>X 시작 (%)</label>
-                        <input type="range" id="x_start" name="x_start" min="0" max="100" value="0">
-                        <div class="range-label"><span id="v_x_start">0</span>%</div>
+                        <div class="input-sync-group">
+                            <input type="range" id="x_start_range" min="0" max="100" value="0">
+                            <input type="number" id="x_start" name="x_start" min="0" max="100" value="0">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>X 끝 (%)</label>
-                        <input type="range" id="x_end" name="x_end" min="0" max="100" value="100">
-                        <div class="range-label"><span id="v_x_end">100</span>%</div>
+                        <div class="input-sync-group">
+                            <input type="range" id="x_end_range" min="0" max="100" value="100">
+                            <input type="number" id="x_end" name="x_end" min="0" max="100" value="100">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Y 시작 (%)</label>
-                        <input type="range" id="y_start" name="y_start" min="0" max="100" value="0">
-                        <div class="range-label"><span id="v_y_start">0</span>%</div>
+                        <div class="input-sync-group">
+                            <input type="range" id="y_start_range" min="0" max="100" value="0">
+                            <input type="number" id="y_start" name="y_start" min="0" max="100" value="0">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Y 끝 (%)</label>
-                        <input type="range" id="y_end" name="y_end" min="0" max="100" value="100">
-                        <div class="range-label"><span id="v_y_end">100</span>%</div>
+                        <div class="input-sync-group">
+                            <input type="range" id="y_end_range" min="0" max="100" value="100">
+                            <input type="number" id="y_end" name="y_end" min="0" max="100" value="100">
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="start_time">시작 시간 (mm:ss)</label>
-                        <input type="text" id="start_time" name="start_time" placeholder="00:00 (미입력 시 처음부터)">
+                        <input type="text" id="start_time" name="start_time" placeholder="00:00">
                     </div>
                     <div class="form-group">
                         <label for="end_time">종료 시간 (mm:ss)</label>
-                        <input type="text" id="end_time" name="end_time" placeholder="mm:ss (미입력 시 끝까지)">
+                        <input type="text" id="end_time" name="end_time" placeholder="mm:ss">
                     </div>
                 </div>
 
@@ -115,84 +91,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-        // 프리뷰 업데이트 로직
-        const selectionArea = document.getElementById('selectionArea');
-        const rangeInputs = ['x_start', 'x_end', 'y_start', 'y_end'];
-
-        function updatePreview() {
-            const vals = {};
-            rangeInputs.forEach(id => {
-                const val = parseInt(document.getElementById(id).value);
-                vals[id] = val;
-                document.getElementById('v_' + id).innerText = val;
-            });
-
-            selectionArea.style.left = vals.x_start + '%';
-            selectionArea.style.top = vals.y_start + '%';
-            selectionArea.style.width = Math.max(0, vals.x_end - vals.x_start) + '%';
-            selectionArea.style.height = Math.max(0, vals.y_end - vals.y_start) + '%';
-        }
-
-        rangeInputs.forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
-        updatePreview();
-
-        // 통신 로직
-        let pdfObjectURL = null;
-        const configForm = document.getElementById('configForm');
-        const runBtn = document.getElementById('runBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-
-        configForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            if (pdfObjectURL) window.URL.revokeObjectURL(pdfObjectURL);
-
-            runBtn.disabled = true;
-            runBtn.innerHTML = '<span class="loading-spinner"></span> 처리 중...';
-            showStatus('영상을 분석하여 악보를 추출하고 있습니다. 잠시만 기다려주세요.', 'processing');
-
-            try {
-                // FormData를 사용하면 name 속성이 있는 모든 input이 자동으로 포함됩니다.
-                const response = await fetch('/execute', { method: 'POST', body: new FormData(this) });
-
-                if (response.ok) {
-                    const blob = await response.blob();
-                    pdfObjectURL = window.URL.createObjectURL(blob);
-                    downloadBtn.disabled = false;
-                    showStatus('PDF 생성이 완료되었습니다!', 'success');
-
-                    // 자동 다운로드 트리거
-                    const a = document.createElement('a');
-                    a.href = pdfObjectURL;
-                    a.download = 'sheet_music_score.pdf';
-                    a.click();
-                } else {
-                    const err = await response.json();
-                    showStatus('실패: ' + (err.error || '알 수 없는 오류'), 'error');
-                }
-            } catch (error) {
-                showStatus('서버 연결에 실패했습니다: ' + error.message, 'error');
-            } finally {
-                runBtn.disabled = false;
-                runBtn.innerHTML = '▶️ 실행';
-            }
-        });
-
-        downloadBtn.addEventListener('click', () => {
-            const a = document.createElement('a');
-            a.href = pdfObjectURL;
-            a.download = 'sheet_music_score.pdf';
-            a.click();
-        });
-
-        function showStatus(msg, type) {
-            const area = document.getElementById('statusArea');
-            area.style.display = 'block';
-            area.style.background = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#fff3cd';
-            document.getElementById('statusMessage').innerHTML =
-                (type === 'processing' ? '<span class="loading-spinner"></span> ' : '') + msg;
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

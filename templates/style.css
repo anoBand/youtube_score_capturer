@@ -1,0 +1,75 @@
+/* templates/style.css */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+.container { max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); overflow: hidden; }
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+.form-container { padding: 40px; }
+
+.form-group { margin-bottom: 25px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 0.95em; }
+.form-group input { width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 16px; background: #f8f9fa; transition: 0.3s; }
+
+/* [변경] Range 타입 스타일 최적화 */
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #e1e5e9;
+    border-radius: 5px;
+    padding: 0;
+    outline: none;
+    border: none;    /* 보더 제거 */
+    margin: 10px 0;  /* 상하 여백만 최소화 */
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #667eea;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* Range + Number 동기화 그룹 레이아웃 */
+.input-sync-group { display: flex; flex-direction: column; gap: 5px; }
+.input-sync-group input[type=number] { padding: 5px 10px; font-size: 14px; text-align: center; }
+
+/* 프리뷰 및 선택 영역 */
+.preview-wrapper { background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #dee2e6; }
+.video-preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+
+    /* [항목 3 추가] 배경 이미지 설정 */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-image 0.5s ease; /* 부드러운 전환 */
+}
+/* [변경] 선택 영역 및 호버 효과 (Yellow -> Blue) */
+.selection-area {
+    position: absolute;
+    border: 2px solid #ff0;
+    background: rgba(255, 255, 0, 0.2);
+    transition: 0.2s;
+    cursor: crosshair;
+}
+.selection-area:hover {
+    border-color: #00d2ff;
+    background: rgba(0, 210, 255, 0.3);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.form-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+.btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.btn-run { background: linear-gradient(135deg, #007bff, #6610f2); color: white; margin-top: 10px;}
+.btn-download { background: linear-gradient(135deg, #fd7e14, #e83e8c); color: white; }
+.button-group { display: flex; gap: 15px; margin-top: 20px; }
+
+.status-area { margin-top: 30px; padding: 20px; border-radius: 10px; display: none; border-left: 4px solid #667eea; }
+.loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
