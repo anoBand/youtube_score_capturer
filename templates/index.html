@@ -4,60 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube 악보 추출기</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>YouTube 악보 추출기</h1>
-            <p>영역과 시간을 지정하여 악보를 PDF로 변환하세요</p>
+            <p>컴퓨터 환경에 최적화된 악보 변환 툴을 자유롭게 사용해보세요</p>
         </div>
 
         <div class="form-container">
             <form id="configForm">
-                <div class="form-group">
+
+                <div class="form-group" id="tour-url">
                     <label for="url">YouTube URL *</label>
                     <input type="url" id="url" name="url" required placeholder="https://www.youtube.com/watch?v=...">
                 </div>
 
-                <div class="preview-wrapper">
-                    <div class="video-preview" id="videoPreview">
-                        <div class="selection-area" id="selectionArea"></div>
-                    </div>
-                </div>
-
-                <div class="form-row-4">
-                    <div class="form-group">
-                        <label>X 시작 (%)</label>
-                        <div class="input-sync-group">
-                            <input type="range" id="x_start_range" min="0" max="100" value="0">
-                            <input type="number" id="x_start" name="x_start" min="0" max="100" value="0">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>X 끝 (%)</label>
-                        <div class="input-sync-group">
-                            <input type="range" id="x_end_range" min="0" max="100" value="100">
-                            <input type="number" id="x_end" name="x_end" min="0" max="100" value="100">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Y 시작 (%)</label>
-                        <div class="input-sync-group">
-                            <input type="range" id="y_start_range" min="0" max="100" value="0">
-                            <input type="number" id="y_start" name="y_start" min="0" max="100" value="0">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Y 끝 (%)</label>
-                        <div class="input-sync-group">
-                            <input type="range" id="y_end_range" min="0" max="100" value="100">
-                            <input type="number" id="y_end" name="y_end" min="0" max="100" value="100">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
+                <div class="form-row" id="tour-time">
                     <div class="form-group">
                         <label for="start_time">시작 시간 (mm:ss)</label>
                         <input type="text" id="start_time" name="start_time" placeholder="00:00">
@@ -68,13 +33,40 @@
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="preview-wrapper" id="tour-preview">
+                    <div class="video-preview" id="videoPreview">
+                        <div class="selection-area" id="selectionArea"></div>
+                    </div>
+                    </div>
+
+                <div class="form-row-4 compact-row">
+                    <div class="form-group"><label class="small-label">X 시작</label><div class="input-sync-group"><input type="range" id="x_start_range" min="0" max="100" value="0"><input type="number" id="x_start" name="x_start" min="0" max="100" value="0"></div></div>
+                    <div class="form-group"><label class="small-label">X 끝</label><div class="input-sync-group"><input type="range" id="x_end_range" min="0" max="100" value="100"><input type="number" id="x_end" name="x_end" min="0" max="100" value="100"></div></div>
+                    <div class="form-group"><label class="small-label">Y 시작</label><div class="input-sync-group"><input type="range" id="y_start_range" min="0" max="100" value="0"><input type="number" id="y_start" name="y_start" min="0" max="100" value="0"></div></div>
+                    <div class="form-group"><label class="small-label">Y 끝</label><div class="input-sync-group"><input type="range" id="y_end_range" min="0" max="100" value="100"><input type="number" id="y_end" name="y_end" min="0" max="100" value="100"></div></div>
+                </div>
+
+                <div class="form-row" id="tour-advanced">
                     <div class="form-group">
-                        <label for="threshold">감도 (Threshold)</label>
+                        <label for="threshold" class="label-with-tooltip">
+                            감도 (Threshold)
+                            <div class="info-icon">i
+                                <div class="tooltip-box">
+                                    기본값: 5.0<br>높으면 둔감, 낮으면 민감하게 악보 추출
+                                </div>
+                            </div>
+                        </label>
                         <input type="number" id="threshold" name="threshold" step="0.1" value="5.0">
                     </div>
                     <div class="form-group">
-                        <label for="frame_interval_sec">처리 간격 (초)</label>
+                        <label for="frame_interval_sec" class="label-with-tooltip">
+                            처리 간격 (초)
+                            <div class="info-icon">i
+                                <div class="tooltip-box">
+                                    기본값: 1.0초<br>시간이 짧을수록 정밀하지만 느림
+                                </div>
+                            </div>
+                        </label>
                         <input type="number" id="frame_interval_sec" name="frame_interval_sec" step="0.1" value="1.0">
                     </div>
                 </div>
@@ -90,6 +82,8 @@
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
