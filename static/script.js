@@ -167,7 +167,7 @@ try {
             downloadBtn.disabled = false;
 
             // 2. 상태 메시지 업데이트
-            showStatus('PDF 생성이 완료되었습니다. (자동 다운로드) 다운로드 버튼을 눌러 받을 수도 있습니다!', 'success');
+            showStatus('PDF 생성이 완료되었습니다 (자동 다운로드). 다운로드 버튼을 눌러 받을 수도 있습니다!', 'success');
 
             // [추가] 3. 자동 다운로드 트리거 실행
             const autoDownloadLink = document.createElement('a');

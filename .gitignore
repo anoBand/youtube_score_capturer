@@ -32,7 +32,6 @@ music_file_*/
 *.mp4
 temp/
 tmp/
-*.md
 
 # 로그 파일
 *.log

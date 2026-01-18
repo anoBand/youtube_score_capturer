@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "80:5000"  # 외부 80포트로 접속하면 컨테이너 5000포트로 연결
+    volumes:
+      - ./images:/app/images
+      - ./temp:/app/temp
+    restart: always
