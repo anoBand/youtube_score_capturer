@@ -47,3 +47,6 @@ error_log.txt
 # 시스템 파일
 Thumbs.db
 .cache
+
+# 쿠키
+cookies.txt
