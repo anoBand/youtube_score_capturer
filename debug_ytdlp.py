@@ -18,7 +18,7 @@ def debug_yt_connection():
 
     # modules/youtube_downloader.py 와 동일한 옵션 구성
     ydl_opts = {
-        'format': 'bestvideo[height<=480][ext=mp4]/bestvideo[height<=480]',
+        'format': 'bestvideo[height<=720][ext=mp4]/bestvideo[height<=720]/best[ext=mp4]/best',
         'quiet': False,  # 디버깅을 위해 출력 켬
         'verbose': True,  # [중요] 상세 로그 출력 (서버 요청/응답 헤더 확인용)
         'no_warnings': False,
