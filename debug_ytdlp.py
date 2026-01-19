@@ -26,6 +26,11 @@ def debug_yt_connection():
         # [추가] 쿠키 파일 경로 지정 (도커 내부 경로 기준)
         'cookiefile': 'cookies.txt',
 
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],  # 안드로이드를 1순위로 시도
+            }
+        },
         # 브라우저 위장 헤더 (User-Agent)
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
