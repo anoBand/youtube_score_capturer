@@ -6,7 +6,4 @@ services:
     container_name: youtube-score-capturer
     ports:
       - "5000:5000"
-    volumes:
-      # 호스트의 cookies.txt를 컨테이너로 연결 (유튜브 403 에러 방지용)
-      - ./cookies.txt:/app/cookies.txt
     restart: always
