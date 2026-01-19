@@ -18,7 +18,7 @@ def debug_yt_connection():
 
     # modules/youtube_downloader.py 와 동일한 옵션 구성
     ydl_opts = {
-        'format': 'bestvideo[height<=720][ext=mp4]/bestvideo[height<=720]/best[ext=mp4]/best',
+        'format': 'best',
         'quiet': False,  # 디버깅을 위해 출력 켬
         'verbose': True,  # [중요] 상세 로그 출력 (서버 요청/응답 헤더 확인용)
         'no_warnings': False,
@@ -28,7 +28,7 @@ def debug_yt_connection():
 
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web'],  # 안드로이드를 1순위로 시도
+                'player_client': ['ios', 'web'],  # 안드로이드를 1순위로 시도
             }
         },
         # 브라우저 위장 헤더 (User-Agent)
