@@ -6,7 +6,7 @@ import yt_dlp
 import traceback
 
 # 테스트할 안전한 유튜브 URL (저작권 문제없는 비디오 권장)
-TEST_URL = "https://www.youtube.com/watch?v=BaW_jenozKc"  # YouTube Help 채널 영상
+TEST_URL = "https://www.youtube.com/watch?v=c8cWaqTwxJM"  # YouTube Help 채널 영상
 
 
 def debug_yt_connection():
