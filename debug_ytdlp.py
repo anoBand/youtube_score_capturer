@@ -23,9 +23,8 @@ def debug_yt_connection():
         'verbose': True,  # [중요] 상세 로그 출력 (서버 요청/응답 헤더 확인용)
         'no_warnings': False,
 
-        # 네트워크 안정성 옵션
-        'socket_timeout': 10,
-        'nocheckcertificate': True,
+        # [추가] 쿠키 파일 경로 지정 (도커 내부 경로 기준)
+        'cookiefile': 'cookies.txt',
 
         # 브라우저 위장 헤더 (User-Agent)
         'http_headers': {
