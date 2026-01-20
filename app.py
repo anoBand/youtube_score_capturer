@@ -6,16 +6,17 @@ import shutil
 import traceback
 import subprocess
 import sys
+import threading  # [추가] 주기적 작업을 위한 스레딩
+import time  # [추가] 시간 대기를 위한 모듈
 from flask import Flask, request, render_template, send_file, jsonify
 from flask_cors import CORS
 
 # 커스텀 모듈 임포트
 from modules.youtube_downloader import download_1080p_video_only as download_youtube_video
-from modules.image_processor import process_video_frames
+from modules.youtube_downloader import get_video_stream_url
+from modules.image_processor import process_video_frames, get_single_frame_as_bytes
 from modules.pdf_generator import create_pdf_from_images
 
-from modules.youtube_downloader import get_video_stream_url
-from modules.image_processor import get_single_frame_as_bytes
 
 def update_yt_dlp():
     """서버 시작 시 yt-dlp 라이브러리를 최신 상태로 업데이트합니다."""
@@ -29,6 +30,26 @@ def update_yt_dlp():
         print("✅ yt-dlp is up-to-date.")
     except Exception as e:
         print(f"⚠️ Failed to update yt-dlp: {e}")
+
+
+# [추가] 24시간마다 업데이트 수행 후 서버 재시작 (Docker의 restart: always 활용)
+def start_periodic_update():
+    def job():
+        while True:
+            # 24시간(86400초) 대기
+            time.sleep(86400)
+
+            print("🔄 Performing daily yt-dlp update...")
+            update_yt_dlp()
+
+            # 중요: 파이썬은 실행 중 라이브러리가 바뀌어도 재시작 전까지는 메모리에 구버전이 남음
+            # 따라서 업데이트 후 스스로 종료하여 Docker가 최신 버전으로 다시 실행하게 유도함
+            print("🛑 Restarting server to apply updates...")
+            os._exit(0)  # 강제 종료 -> Docker가 다시 살려줌
+
+    # 데몬 스레드로 실행 (메인 프로세스 종료 시 함께 종료됨)
+    thread = threading.Thread(target=job, daemon=True)
+    thread.start()
 
 
 app = Flask(__name__)
@@ -62,7 +83,7 @@ def time_to_seconds(time_str):
 def index():
     return render_template('index.html')
 
-# [변경점] 항목 4: 프레임 가져오기 라우트
+
 @app.route('/get_frame', methods=['POST'])
 def get_frame():
     url = request.form.get('url')
@@ -71,26 +92,24 @@ def get_frame():
     if not url:
         return jsonify({'error': 'URL이 필요합니다.'}), 400
 
-    # 1. 초 단위 변환
     seconds = time_to_seconds(time_str) or 0
 
     try:
-        # 2. Downloader에게 주소 요청
         stream_url = get_video_stream_url(url)
         if not stream_url:
             return jsonify({'error': '영상 주소를 찾을 수 없습니다.'}), 400
 
-        # 3. Processor에게 이미지 데이터(BytesIO) 요청
         image_bytes = get_single_frame_as_bytes(stream_url, seconds)
 
         if image_bytes:
-            # 4. 완성된 데이터를 그대로 반환
             return send_file(image_bytes, mimetype='image/jpeg')
         else:
             return jsonify({'error': '이미지를 생성할 수 없습니다.'}), 500
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
 @app.route('/execute', methods=['POST'])
 def execute():
     # 각 요청마다 독립적인 임시 디렉터리 생성 (Race Condition 방지)
@@ -106,6 +125,12 @@ def execute():
         # 데이터 파싱 및 기본값 설정
         start_time = time_to_seconds(data.get('start_time'))
         end_time = time_to_seconds(data.get('end_time'))
+
+        # [추가] 5분 제한 유효성 검사
+        start_sec = start_time if start_time is not None else 0
+        if end_time is not None:
+            if (end_time - start_sec) > 300:
+                return jsonify({'error': '5분 이상의 영상이 너무 길어 처리가 길어질 수 있습니다. 나눠서 입력하세요'}), 400
 
         # UI에서 넘어온 문자열 데이터를 숫자로 변환
         config = {
@@ -160,7 +185,8 @@ def execute():
             shutil.rmtree(temp_dir)
             print(f"Cleaned up directory: {temp_dir}")
 
+
 if __name__ == '__main__':
     update_yt_dlp()
-    # 외부 접속을 허용하려면 host='0.0.0.0' 추가 고려
+    start_periodic_update()  # [추가] 백그라운드 업데이트 스케줄러 실행
     app.run(debug=True, port=5000)

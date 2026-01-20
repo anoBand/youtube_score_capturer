@@ -19,7 +19,3 @@ YouTube 영상에서 악보를 자동으로 캡처하여 PDF로 만들어주는 
 - **Language**: Python
 - **Web**: Flask
 - **Media**: OpenCV, yt-dlp, Pillow, FPDF
-
-## 유튜브 우회 디버깅
-- 도커 빌드 후 `docker exec -it youtube-score-capturer python debug_ytdlp.py` 실행 (쿠키파일 업로드 필요)
-- 포맷 관련 문구가 나올 시 쿠키 또는 IP 블랙리스트 상태임 (debug py에서 format은 문제 없음)

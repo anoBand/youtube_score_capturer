@@ -5,6 +5,7 @@ const videoPreview = document.getElementById('videoPreview');
 const urlInput = document.getElementById('url');
 const coordTypes = ['x_start', 'x_end', 'y_start', 'y_end'];
 const startTimeInput = document.getElementById('start_time');
+const endTimeInput = document.getElementById('end_time'); // [추가] 종료 시간 요소
 
 // --- [항목 3] 유튜브 썸네일 로드 로직 (기존 유지) ---
 function extractVideoId(url) {
@@ -110,17 +111,25 @@ function updateInputValue(id, value) {
 }
 
 
-// --- [항목 4] 실시간 프레임 요청 함수 (기존 유지) ---
-async function fetchCurrentFrame() {
+// --- [항목 4] 실시간 프레임 요청 함수 (수정됨) ---
+// [변경] 특정 시간 값을 인자로 받아 해당 시점의 프레임을 요청하도록 변경
+async function fetchCurrentFrame(timeStr) {
     const url = urlInput.value;
-    const startTime = startTimeInput.value;
+
+    // 인자로 받은 시간이 있으면 그 시간을, 없으면 시작 시간 필드의 값을 사용
+    // (이벤트 리스너에서 값을 넘겨주지 않는 초기 로드 등의 상황 대비)
+    const targetTime = (typeof timeStr === 'string' && timeStr.trim() !== '') ? timeStr : startTimeInput.value;
+
     const videoId = extractVideoId(url);
-    if (!videoId) return;
+    // URL이 없거나 시간 값이 없으면 실행하지 않음
+    if (!videoId || !targetTime) return;
 
     videoPreview.style.opacity = '0.5';
     const formData = new FormData();
     formData.append('url', url);
-    formData.append('start_time', startTime);
+    // [중요] 서버의 /get_frame 엔드포인트는 'start_time'이라는 키로 시간을 받도록 설계되어 있음
+    // 따라서 종료 시간을 요청할 때도 키 값은 'start_time'으로 보내야 함 (값만 종료 시간으로 전달)
+    formData.append('start_time', targetTime);
 
     try {
         const response = await fetch('/get_frame', { method: 'POST', body: formData });
@@ -136,9 +145,15 @@ async function fetchCurrentFrame() {
     }
 }
 
-startTimeInput.addEventListener('change', fetchCurrentFrame);
+// [변경] 시작 시간 입력 후 포커스 해제(change) 시 해당 시점 프레임 요청
+startTimeInput.addEventListener('change', (e) => fetchCurrentFrame(e.target.value));
+
+// [추가] 종료 시간 입력 후 포커스 해제(change) 시 해당 시점 프레임 요청
+endTimeInput.addEventListener('change', (e) => fetchCurrentFrame(e.target.value));
+
+// URL이 입력된 상태에서 시간이 이미 있다면 초기 로드 (시작 시간 우선)
 urlInput.addEventListener('blur', () => {
-    if (startTimeInput.value) fetchCurrentFrame();
+    if (startTimeInput.value) fetchCurrentFrame(startTimeInput.value);
 });
 
 // 초기 호출
@@ -157,7 +172,7 @@ configForm.addEventListener('submit', async function(e) {
     runBtn.innerHTML = '<span class="loading-spinner"></span> 처리 중...';
     showStatus('영상을 분석하여 악보를 추출하고 있습니다.', 'processing');
 
-try {
+    try {
         const response = await fetch('/execute', { method: 'POST', body: new FormData(this) });
         if (response.ok) {
             const blob = await response.blob();
@@ -211,38 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
         doneBtnText: '완료',
         nextBtnText: '다음',
         prevBtnText: '이전',
-
-        // [중요] 팝오버가 렌더링될 때 '건너뛰기' 버튼을 강제로 주입
-        onPopoverRender: (popover, { config, state }) => {
-            // footer 요소 찾기 (라이브러리 내부 클래스명)
-            const footer = popover.wrapper.querySelector('.driver-popover-footer');
-
-            // 이미 건너뛰기 버튼이 있다면 중복 생성 방지
-            if (footer && !footer.querySelector('.skip-btn')) {
-                const skipBtn = document.createElement('button');
-                skipBtn.innerText = '건너뛰기';
-                skipBtn.className = 'skip-btn';
-
-                // 스타일 직접 지정 (왼쪽에 배치)
-                skipBtn.style.cssText = `
-                    background: none; 
-                    border: none; 
-                    color: #888; 
-                    text-decoration: underline; 
-                    font-size: 12px; 
-                    cursor: pointer; 
-                    margin-right: auto; /* 우측 버튼들과 간격 벌리기 (Flexbox) */
-                    padding: 5px;
-                `;
-
-                skipBtn.onclick = () => {
-                    driverObj.destroy(); // 투어 종료
-                };
-
-                // footer의 가장 앞에 버튼 추가
-                footer.prepend(skipBtn);
-            }
-        },
 
         steps: [
             {
