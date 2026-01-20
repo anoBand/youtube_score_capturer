@@ -1,76 +1,103 @@
 # debug_ytdlp.py
-# 오라클 서버 배포 시 yt-dlp 접속 테스트 및 디버깅용 스크립트
+# 로컬/서버 배포 환경에서의 yt-dlp 및 멀티미디어 환경 진단 스크립트
 
 import sys
+import os
+import subprocess
 import yt_dlp
 import traceback
 
-# 테스트할 안전한 유튜브 URL (저작권 문제없는 비디오 권장)
-TEST_URL = "https://www.youtube.com/watch?v=BaW_jenozKc"  # YouTube Help 채널 영상
+# 테스트용 URL (공개된 고화질 영상)
+TEST_URL = "https://www.youtube.com/watch?v=BaW_jenozKc"
 
 
-def debug_yt_connection():
+def check_command(cmd):
+    """시스템 명령어가 실행 가능한지 확인"""
+    try:
+        subprocess.run([cmd, '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except FileNotFoundError:
+        return False
+
+
+def debug_yt_environment():
     print("=" * 60)
-    print(f"🔍 yt-dlp Connection Debugger")
+    print(f"🔍 System & Library Diagnostics")
     print(f"🐍 Python Version: {sys.version.split()[0]}")
     print(f"📺 yt-dlp Version: {yt_dlp.version.__version__}")
+
+    # FFmpeg 확인 (악보 캡처 앱의 핵심 의존성)
+    ffmpeg_ok = check_command('ffmpeg')
+    ffprobe_ok = check_command('ffprobe')
+    print(f"🎬 FFmpeg Installed: {'✅ Yes' if ffmpeg_ok else '❌ No'}")
+    print(f"🔎 FFprobe Installed: {'✅ Yes' if ffprobe_ok else '❌ No'}")
+
+    # 쿠키 파일 감지
+    cookie_file = 'cookies.txt'
+    has_cookies = os.path.exists(cookie_file)
+    print(f"🍪 cookies.txt Found: {'✅ Yes (Auto-loading)' if has_cookies else 'ℹ️  No (Using guest mode)'}")
     print("=" * 60)
 
-    # modules/youtube_downloader.py 와 동일한 옵션 구성
+    # yt-dlp 옵션 설정 (유연하고 견고하게 구성)
     ydl_opts = {
-        'format': 'bestvideo[height<=480][ext=mp4]/bestvideo[height<=480]',
-        'quiet': False,  # 디버깅을 위해 출력 켬
-        'verbose': True,  # [중요] 상세 로그 출력 (서버 요청/응답 헤더 확인용)
+        # 480p 이하 MP4를 선호하되, 없으면 가장 좋은 포맷 선택
+        'format': 'bestvideo[height<=480][ext=mp4]/best[height<=480]/best',
+        'quiet': False,
+        'verbose': True,  # 상세 로그 활성화
         'no_warnings': False,
 
-        # 네트워크 안정성 옵션
-        'socket_timeout': 10,
+        # 네트워크 설정
+        'socket_timeout': 15,
         'nocheckcertificate': True,
-
-        # 브라우저 위장 헤더 (User-Agent)
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        },
     }
 
-    print(f"🚀 Trying to fetch info from: {TEST_URL}")
-    print("⏳ Processing... (This might take a few seconds)")
+    # 쿠키가 존재할 경우에만 경로 추가
+    if has_cookies:
+        ydl_opts['cookiefile'] = cookie_file
+
+    print(f"🚀 Testing YouTube Access: {TEST_URL}")
     print("-" * 60)
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # 1단계: 정보 추출 테스트 (다운로드 X)
+            # 1. 메타데이터 및 스트림 정보 추출
             info = ydl.extract_info(TEST_URL, download=False)
 
             print("-" * 60)
-            print("✅ SUCCESS! Successfully connected to YouTube.")
+            print("✅ CONNECTION SUCCESS!")
             print(f"📹 Title: {info.get('title')}")
-            print(f"⏱️  Duration: {info.get('duration')}s")
-            print(f"🔗 Stream URL extracted: {'Yes' if info.get('url') else 'No'}")
+            print(f"📊 Channel: {info.get('uploader')}")
+            print(f"🎞️  Selected Format: {info.get('format_id')} ({info.get('resolution')})")
 
-            # 실제 스트림 URL이 유효한지 확인
-            if info.get('url'):
-                print(f"🌐 Stream URL (Preview): {info.get('url')[:50]}...")
+            # 스트림 URL 존재 여부 확인
+            stream_url = info.get('url')
+            if stream_url:
+                print(f"🔗 Stream URL Found (Length: {len(stream_url)} chars)")
+                print(f"🌐 URL Preview: {stream_url[:70]}...")
             else:
-                print("⚠️  Warning: Metadata fetched, but no direct stream URL found.")
+                print("⚠️  Warning: Metadata fetched, but direct stream URL is missing.")
 
     except yt_dlp.utils.DownloadError as e:
+        error_msg = str(e)
         print("-" * 60)
-        print("❌ DOWNLOAD ERROR (Connection Failed)")
-        print(f"Error Message: {e}")
-        print("\n[진단 가이드]")
-        if "HTTP Error 429" in str(e):
-            print("👉 원인: 너무 많은 요청 (Rate Limit). 잠시 후 다시 시도하세요.")
-        elif "HTTP Error 403" in str(e) or "Sign in" in str(e):
-            print("👉 원인: IP 차단됨 (Oracle Cloud IP가 막힘).")
-            print("👉 해결: Cookies 파일(cookies.txt)을 추출하여 서버에 업로드하고 옵션에 추가해야 합니다.")
+        print("❌ DOWNLOAD ERROR")
+        print(f"Message: {error_msg}")
+
+        print("\n[Diagnostic Guide]")
+        if "429" in error_msg:
+            print("👉 Rate Limited: 요청이 너무 많습니다. IP가 일시적으로 제한되었습니다.")
+        elif "403" in error_msg or "Sign in" in error_msg:
+            print("👉 Access Denied: 유튜브가 이 환경을 봇으로 의심합니다. 쿠키가 필요할 수 있습니다.")
+        elif "format" in error_msg:
+            print("👉 Format Error: 요청한 화질 옵션이 해당 영상에 존재하지 않습니다.")
+        else:
+            print("👉 Network/IP Issue: 네트워크 연결이나 ISP의 유튜브 접속 제한을 확인하세요.")
 
     except Exception as e:
         print("-" * 60)
-        print("❌ UNEXPECTED ERROR")
+        print("❌ UNEXPECTED SYSTEM ERROR")
         traceback.print_exc()
 
 
 if __name__ == "__main__":
-    debug_yt_connection()
+    debug_yt_environment()
