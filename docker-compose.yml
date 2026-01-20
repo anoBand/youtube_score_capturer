@@ -7,6 +7,5 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      # [추가] 호스트의 cookies.txt를 컨테이너 내부로 마운트
-      - ./cookies.txt:/app/cookies.txt
+#      - ./cookies.txt:/app/cookies.txt # 쿠키 필요 시
     restart: always
