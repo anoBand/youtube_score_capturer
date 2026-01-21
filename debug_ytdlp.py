@@ -8,7 +8,7 @@ import yt_dlp
 import traceback
 
 # 테스트용 URL (공개된 고화질 영상)
-TEST_URL = "https://www.youtube.com/watch?v=BaW_jenozKc"
+TEST_URL = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
 
 
 def check_command(cmd):
@@ -38,19 +38,19 @@ def debug_yt_environment():
     print(f"🍪 cookies.txt Found: {'✅ Yes (Auto-loading)' if has_cookies else 'ℹ️  No (Using guest mode)'}")
     print("=" * 60)
 
-    # yt-dlp 옵션 설정 (유연하고 견고하게 구성)
     ydl_opts = {
-        # 480p 이하 MP4를 선호하되, 없으면 가장 좋은 포맷 선택
         'format': 'bestvideo[height<=480][ext=mp4]/best[height<=480]/best',
         'quiet': False,
-        'verbose': True,  # 상세 로그 활성화
+        'verbose': True,
         'no_warnings': False,
-
-        # 네트워크 설정
         'socket_timeout': 15,
         'nocheckcertificate': True,
-    }
 
+        # [핵심] 이 줄을 추가해야 로컬에 설치된 Node.js를 인식합니다!
+        'js_runtimes': {'node': {}, 'deno': {}},
+        # [★추가] 외부 챌린지 해결 스크립트 다운로드 허용
+        'remote_components': {'ejs': 'github'},
+    }
     # 쿠키가 존재할 경우에만 경로 추가
     if has_cookies:
         ydl_opts['cookiefile'] = cookie_file

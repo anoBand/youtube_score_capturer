@@ -22,6 +22,12 @@ def download_1080p_video_only(url, output_dir):
         'nocheckcertificate': True,  # SSL 인증서 검증 생략 (서버 환경 호환성)
         'no_mtime': True,  # 파일 수정 시간을 유튜브 업로드 시간으로 맞추지 않음
 
+        # [핵심] debug_ytdlp.py에서 성공한 설정 추가
+        'js_runtimes': {'node': {}, 'deno': {}},
+
+        # [권장] 챌린지 해결용 컴포넌트 (경고 해결용)
+        'remote_components': {'ejs': 'github'},
+
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
