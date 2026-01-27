@@ -22,7 +22,7 @@ Thumbs.db
 temp/
 *.swp
 *.swo
-debug_ytdlp.py
+scripts/debug_ytdlp.py
 
 # Documentation
 README.md
