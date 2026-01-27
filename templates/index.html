@@ -83,74 +83,37 @@
         </div>
     </div>
 
+    <!-- [추가] 리포트 플로팅 버튼 -->
+    <button type="button" class="btn-float-report" id="openReportBtn">
+        🐞 버그/오류 제보
+    </button>
+
+    <!-- [추가] 오류 제보 모달 -->
+    <div class="modal-overlay" id="reportModal">
+        <div class="modal-content">
+            <div class="modal-header">오류 제보 및 피드백</div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="reportDesc">문제 설명 (필수)</label>
+                    <textarea id="reportDesc" rows="4" placeholder="어떤 문제가 발생했나요? 자세히 적어주시면 해결에 큰 도움이 됩니다."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reportEmail">회신 받을 이메일 (선택)</label>
+                    <input type="email" id="reportEmail" placeholder="example@email.com (소통용)">
+                </div>
+                <div class="form-group">
+                    <label for="reportDebugInfo">입력값 및 환경 정보 (자동 입력됨)</label>
+                    <textarea id="reportDebugInfo" class="debug-info" rows="6" readonly></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal btn-modal-cancel" id="closeReportBtn">취소</button>
+                <button type="button" class="btn-modal btn-modal-send" id="sendReportBtn">🚀 전송하기</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-
-    <!-- [추가] URL 파라미터 상태 관리 스크립트 -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 상태를 관리할 입력 필드 ID 목록
-            const fields = [
-                'url', 'start_time', 'end_time',
-                'x_start', 'x_end', 'y_start', 'y_end',
-                'threshold', 'frame_interval_sec'
-            ];
-
-            const params = new URLSearchParams(window.location.search);
-            let restored = false;
-
-            // 1. 페이지 로드 시 URL 파라미터 값을 입력창에 복구
-            fields.forEach(id => {
-                const element = document.getElementById(id);
-                if (element && params.has(id)) {
-                    element.value = params.get(id);
-                    restored = true;
-
-                    // Range 슬라이더가 있는 경우 숫자 입력창과 동기화
-                    const rangeElement = document.getElementById(id + '_range');
-                    if (rangeElement) {
-                        rangeElement.value = params.get(id);
-                    }
-                }
-            });
-
-            // 2. 값이 변경될 때마다 URL 업데이트 (History API 사용)
-            function updateURL() {
-                const newParams = new URLSearchParams();
-                fields.forEach(id => {
-                    const element = document.getElementById(id);
-                    // 값이 있는 경우에만 파라미터에 추가
-                    if (element && element.value) {
-                        newParams.set(id, element.value);
-                    }
-                });
-                // 페이지 새로고침 없이 주소창 URL만 업데이트
-                window.history.replaceState({}, '', '?' + newParams.toString());
-            }
-
-            // 모든 대상 필드에 이벤트 리스너 등록
-            fields.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('input', updateURL);
-                    element.addEventListener('change', updateURL);
-                }
-            });
-
-            // 3. 복원된 값이 있다면 UI/로직 동기화를 위해 이벤트 트리거
-            // (기존 script.js의 이벤트 리스너가 동작하도록 함)
-            if (restored) {
-                setTimeout(() => {
-                    fields.forEach(id => {
-                        const element = document.getElementById(id);
-                        if (element) {
-                            element.dispatchEvent(new Event('input', { bubbles: true }));
-                            element.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                    });
-                }, 100); // script.js 초기화 시간 고려
-            }
-        });
-    </script>
 </body>
 </html>
