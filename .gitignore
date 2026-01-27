@@ -1,12 +1,18 @@
-# Python
+# IDE & Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build & Cache
+build/
+dist/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -19,34 +25,29 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# 가상환경
-.env
-.venv
-venv/
-ENV/
-env/
-
-# 임시 파일들
-music_file_*/
-*.mp4
-temp/
-tmp/
-
-# 로그 파일
-*.log
-error_log.txt
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-
-# 시스템 파일
-Thumbs.db
 .cache
 
-# 쿠키
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Temporary Files & Logs
+temp/
+tmp/
+*.log
+error_log.txt
+music_file_*/
+*.mp4
+Thumbs.db
+.DS_Store
+
+# Local Configuration
+.env.*
+*.local
 cookies.txt
+
+# Documentation
+GEMINI.md

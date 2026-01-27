@@ -1,7 +1,34 @@
-# .dockerignore
-venv/
-temp/
-__pycache__/
+# Git and IDE
 .git/
 .idea/
+.vscode/
+
+# Python Virtual Environment
+venv/
+.venv/
+env/
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS generated files
 .DS_Store
+Thumbs.db
+
+# Temporary & Local files
+temp/
+*.swp
+*.swo
+debug_ytdlp.py
+
+# Documentation
+README.md
+GEMINI.md
+
+# Docker config
+docker-compose.yml
+.dockerignore
+.gitignore
