@@ -32,25 +32,25 @@ def update_yt_dlp():
         print(f"⚠️ Failed to update yt-dlp: {e}")
 
 
-# [추가] 24시간마다 업데이트 수행 후 서버 재시작 (Docker의 restart: always 활용)
 def start_periodic_update():
     def job():
         while True:
-            # 24시간(86400초) 대기
+            # 24시간 대기
             time.sleep(86400)
-
             print("🔄 Performing daily yt-dlp update...")
             update_yt_dlp()
-
-            # 중요: 파이썬은 실행 중 라이브러리가 바뀌어도 재시작 전까지는 메모리에 구버전이 남음
-            # 따라서 업데이트 후 스스로 종료하여 Docker가 최신 버전으로 다시 실행하게 유도함
             print("🛑 Restarting server to apply updates...")
-            os._exit(0)  # 강제 종료 -> Docker가 다시 살려줌
+            os._exit(0)
 
-    # 데몬 스레드로 실행 (메인 프로세스 종료 시 함께 종료됨)
     thread = threading.Thread(target=job, daemon=True)
     thread.start()
 
+def cleanup_temp_dir():
+    """서버 시작 시 혹은 주기적으로 temp 폴더 내의 잔여 파일을 모두 제거합니다."""
+    if os.path.exists(TEMP_BASE_DIR):
+        print("Cleaning up old temporary files...")
+        shutil.rmtree(TEMP_BASE_DIR)
+    os.makedirs(TEMP_BASE_DIR)
 
 app = Flask(__name__)
 CORS(app)
@@ -187,6 +187,13 @@ def execute():
 
 
 if __name__ == '__main__':
+    # 1. 환경 준비
+    cleanup_temp_dir()  # [추가] 시작 시 기존 찌꺼기 제거
     update_yt_dlp()
-    start_periodic_update()  # [추가] 백그라운드 업데이트 스케줄러 실행
-    app.run(debug=True, port=5000)
+
+    # 2. 백그라운드 스케줄러 실행
+    start_periodic_update()
+
+    # 3. 서버 실행 (Host와 Debug 설정 변경)
+    # host='0.0.0.0'이 있어야 Tailscale IP를 통한 외부 접속이 가능합니다.
+    app.run(host='0.0.0.0', port=5000, debug=False)

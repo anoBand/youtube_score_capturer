@@ -6,6 +6,6 @@ services:
     container_name: youtube-score-capturer
     ports:
       - "5000:5000"
-    volumes:
+#    volumes:
 #      - ./cookies.txt:/app/cookies.txt # 쿠키 필요 시
     restart: always
