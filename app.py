@@ -46,11 +46,24 @@ def start_periodic_update():
     thread.start()
 
 def cleanup_temp_dir():
-    """서버 시작 시 혹은 주기적으로 temp 폴더 내의 잔여 파일을 모두 제거합니다."""
-    if os.path.exists(TEMP_BASE_DIR):
-        print("Cleaning up old temporary files...")
-        shutil.rmtree(TEMP_BASE_DIR)
-    os.makedirs(TEMP_BASE_DIR)
+    """
+    임시 디렉토리 자체를 삭제하지 않고 내부의 파일/폴더만 삭제합니다.
+    (Docker 볼륨 마운트 충돌 방지)
+    """
+    print("Cleaning up old temporary files...")
+    if not os.path.exists(TEMP_BASE_DIR):
+        os.makedirs(TEMP_BASE_DIR)
+        return
+
+    for item in os.listdir(TEMP_BASE_DIR):
+        item_path = os.path.join(TEMP_BASE_DIR, item)
+        try:
+            if os.path.isfile(item_path) or os.path.islink(item_path):
+                os.unlink(item_path)  # 파일이나 링크 삭제
+            elif os.path.isdir(item_path):
+                shutil.rmtree(item_path)  # 하위 디렉토리 삭제
+        except Exception as e:
+            print(f"Failed to delete {item_path}. Reason: {e}")
 
 app = Flask(__name__)
 CORS(app)
@@ -196,4 +209,4 @@ if __name__ == '__main__':
 
     # 3. 서버 실행 (Host와 Debug 설정)
     # host='0.0.0.0'이 있어야 Tailscale IP를 통한 외부 접속이 가능합니다.
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
