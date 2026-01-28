@@ -11,6 +11,7 @@ def download_1080p_video_only(url, output_dir):
     ydl_opts = {
         # [기존 유지] 1080p 이하 mp4(avc1) 우선 선택
         'format': 'bestvideo[ext=mp4][height<=1080][vcodec^=avc1]/bestvideo[ext=mp4][height<=1080]',
+        'noplaylist': True,
         'outtmpl': output_path,
         'overwrites': True,
         'quiet': True,

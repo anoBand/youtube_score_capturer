@@ -194,6 +194,6 @@ if __name__ == '__main__':
     # 2. 백그라운드 스케줄러 실행
     start_periodic_update()
 
-    # 3. 서버 실행 (Host와 Debug 설정 변경)
+    # 3. 서버 실행 (Host와 Debug 설정)
     # host='0.0.0.0'이 있어야 Tailscale IP를 통한 외부 접속이 가능합니다.
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)
