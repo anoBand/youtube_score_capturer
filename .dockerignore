@@ -3,11 +3,6 @@
 .idea/
 .vscode/
 
-# Python Virtual Environment
-venv/
-.venv/
-env/
-.env
 
 # Python cache
 __pycache__/
