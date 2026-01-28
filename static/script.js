@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const thresholdValue = parseFloat(thresholdInput.value);
 
         if (isNaN(thresholdValue) || thresholdValue < 0.5 || thresholdValue > 15.0) {
-            alert('감도는 0.5에서 15 사이어야 합니다');
+            showStatus('감도는 0.5에서 15 사이어야 합니다', 'error');
             thresholdInput.focus();
             return; // Prevent form submission
         }
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const frameIntervalValue = parseFloat(frameIntervalInput.value);
 
         if (isNaN(frameIntervalValue) || frameIntervalValue <= 0 || frameIntervalValue > 3.0) { // Added <=0 to match existing number input min="0" and step="0.1"
-            alert('처리 간격은 3초를 넘을 수 없습니다');
+            showStatus('처리 간격은 3초를 넘을 수 없습니다', 'error');
             frameIntervalInput.focus();
             return; // Prevent form submission
         }

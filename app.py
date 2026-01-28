@@ -130,7 +130,7 @@ def execute():
         start_sec = start_time if start_time is not None else 0
         if end_time is not None:
             if (end_time - start_sec) > 300:
-                return jsonify({'error': '5분 이상의 영상이 너무 길어 처리가 길어질 수 있습니다. 나눠서 입력하세요'}), 400
+                return jsonify({'error': '5분 이상의 영상이 너무 길어 처리가 길어질 수 있습니다. 나눠서 입력해 주세요'}), 400
 
         # UI에서 넘어온 문자열 데이터를 숫자로 변환
         config = {
