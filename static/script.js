@@ -132,6 +132,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     configForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+
+        // Add validation for threshold here
+        const thresholdInput = document.getElementById('threshold');
+        const thresholdValue = parseFloat(thresholdInput.value);
+
+        if (isNaN(thresholdValue) || thresholdValue < 0.5 || thresholdValue > 15.0) {
+            alert('감도는 0.5에서 15 사이어야 합니다');
+            thresholdInput.focus();
+            return; // Prevent form submission
+        }
+
+        // New validation for frame_interval_sec
+        const frameIntervalInput = document.getElementById('frame_interval_sec');
+        const frameIntervalValue = parseFloat(frameIntervalInput.value);
+
+        if (isNaN(frameIntervalValue) || frameIntervalValue <= 0 || frameIntervalValue > 3.0) { // Added <=0 to match existing number input min="0" and step="0.1"
+            alert('처리 간격은 3초를 넘을 수 없습니다');
+            frameIntervalInput.focus();
+            return; // Prevent form submission
+        }
+
         if (pdfObjectURL) window.URL.revokeObjectURL(pdfObjectURL);
         runBtn.disabled = true;
         runBtn.innerHTML = '<span class="loading-spinner"></span> 처리 중...';

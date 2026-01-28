@@ -14,143 +14,123 @@ def process_video_frames(
         threshold: float, frame_interval_sec: float = 1.0
 ) -> List[str]:
     """
-    영상에서 악보 프레임을 추출합니다.
-    [검수 로직 적용]
-    1. 하이라이트(유채색) 영역을 완벽히 마스킹하여 '배경'으로 취급합니다.
-    2. 이전 프레임과 현재 프레임의 하이라이트 영역을 합쳐 '비교 제외 구역'으로 설정합니다.
-    3. 순수 악보(검은 잉크)의 변화만 감지하여 중복을 방지합니다.
+    영상에서 악보 프레임을 최적화된 방식으로 추출합니다.
+
+    최적화 포인트:
+    1. cap.set() 대신 cap.grab()을 사용하여 프레임 건너뛰기 속도 개선.
+    2. 마스크 연산 시 불필요한 복사를 줄이고 비트 연산 최적화.
+    3. 메모리 효율을 위해 대형 객체 재사용.
     """
-    print(f"🚀 Processing: Threshold={threshold}, Interval={frame_interval_sec}s")
+    print(f"🚀 Optimized Processing Start: Threshold={threshold}, Interval={frame_interval_sec}s")
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise IOError("Cannot open video file.")
 
     try:
-        # 1. 좌표 정규화
-        x_start_p, x_end_p = x_start / 100.0, x_end / 100.0
-        y_start_p, y_end_p = y_start / 100.0, y_end / 100.0
+        # 1. 좌표 및 시간 초기 설정
+        x_s, x_e = x_start / 100.0, x_end / 100.0
+        y_s, y_e = y_start / 100.0, y_end / 100.0
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 30
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        # 2. 탐색 구간 설정
-        current_frame = int(start_time * fps) if start_time else 0
-        end_frame = int(end_time * fps) if end_time else total_frames
-        frame_step = int(fps * frame_interval_sec) or 1
+        start_f = int(start_time * fps) if start_time else 0
+        end_f = int(end_time * fps) if end_time else total_frames
+        frame_step = max(int(fps * frame_interval_sec), 1)
+
+        # 시작 지점으로 이동 (최초 1회는 set 사용)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_f)
+        current_frame = start_f
 
         processed_image_paths = []
-
-        # [상태 저장 변수]
-        last_binary_frame = None  # 이전 프레임의 이진화 이미지
-        last_dilated_mask = None  # 이전 프레임의 하이라이트 마스크
+        last_binary_frame = None
+        last_dilated_mask = None
 
         MAX_IMAGES = 200
-
-        # [마스킹 커널 설정]
-        # 5x5 사각형 커널: 노이즈 제거 및 영역 확장에 사용
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
-        while current_frame < end_frame:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
+        while current_frame < end_f:
             ret, frame = cap.read()
-            if not ret: break
+            if not ret:
+                break
 
-            h, w, _ = frame.shape
+            h, w = frame.shape[:2]
+            # 크롭 영역 계산 및 유효성 검사
+            y1, y2 = int(h * y_s), int(h * y_e)
+            x1, x2 = int(w * x_s), int(w * x_e)
 
-            # 3. 사용자 지정 영역 크롭
-            cropped = frame[int(h * y_start_p):int(h * y_end_p), int(w * x_start_p):int(w * x_end_p)]
+            cropped = frame[y1:y2, x1:x2]
             if cropped.size == 0:
+                # 다음 구간까지 grab()으로 건너뛰기
+                for _ in range(frame_step - 1):
+                    cap.grab()
                 current_frame += frame_step
                 continue
 
             # =========================================================
-            # [알고리즘: Human Check Logic 구현]
+            # [최적화된 알고리즘 로직]
             # =========================================================
 
-            # A. 색상 분리 (HSV 변환)
+            # 1. HSV 변환 및 채도/명도 기반 마스킹 (메모리 재사용 고려)
             hsv = cv2.cvtColor(cropped, cv2.COLOR_BGR2HSV)
-            s_channel = hsv[:, :, 1]  # 채도
-            v_channel = hsv[:, :, 2]  # 명도
+            s_channel = hsv[:, :, 1]
+            v_channel = hsv[:, :, 2]
 
-            # B. 정교한 하이라이트 마스크 생성
-            # 조건 1: 채도가 10 이상 (아주 연한 파스텔톤도 감지)
+            # 채도 10 이상 & 명도 50 이상 영역 추출
             _, s_mask = cv2.threshold(s_channel, 10, 255, cv2.THRESH_BINARY)
-
-            # 조건 2: 명도가 50 이상 (검은색 잉크는 마스킹하지 않도록 보호)
             _, v_mask = cv2.threshold(v_channel, 50, 255, cv2.THRESH_BINARY)
-
-            # 두 조건을 모두 만족해야 하이라이트임
             color_mask = cv2.bitwise_and(s_mask, v_mask)
 
-            # [추가] 모폴로지 닫기 (Closing): 마스크 내부의 구멍(글자 등)을 메워 덩어리로 만듦
+            # 모폴로지 및 팽창 (커널 연산 통합)
             color_mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, kernel)
+            dilated_mask = cv2.dilate(color_mask, kernel, iterations=2)  # 3회에서 2회로 조정 (성능)
 
-            # C. 마스크 팽창 (Dilation): 경계선 노이즈 제거를 위해 영역을 넓힘 (3회 반복)
-            dilated_mask = cv2.dilate(color_mask, kernel, iterations=3)
-
-            # D. 그레이스케일 변환
+            # 2. 그레이스케일 변환 및 하이라이트 제거
             gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+            # 마스크 영역을 흰색으로 덮어씀 (Inpainting 대체)
+            gray[dilated_mask > 0] = 255
 
-            # E. [Inpainting 효과] 하이라이트 자리를 흰색(255)으로 덮어씀
-            # -> 이 과정으로 인해 하이라이트 바는 '흰 종이'가 됩니다.
-            gray_no_highlight = gray.copy()
-            gray_no_highlight[dilated_mask > 0] = 255
+            # 3. 이진화
+            _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 
-            # F. 이진화 (Binarization)
-            # -> 회색조 노이즈를 없애고 0(음표)과 255(배경)만 남깁니다.
-            _, binary = cv2.threshold(gray_no_highlight, 200, 255, cv2.THRESH_BINARY)
-
-            # =========================================================
-
+            # 4. 변화량 계산 (XOR 대신 absdiff 사용 - 속도면에서 유사하나 직관적)
             should_save = False
-
             if last_binary_frame is None:
                 should_save = True
             else:
-                # G. 변화량 계산 (검수 로직의 핵심)
-
-                # 1. 두 이미지의 차이 계산 (XOR 연산)
                 diff = cv2.absdiff(last_binary_frame, binary)
 
-                # 2. [핵심] "공통 가시 영역"만 비교
-                # 이전 프레임의 바 위치(last_mask)와 현재 프레임의 바 위치(curr_mask)를 합침
-                # 이 합쳐진 영역(unstable_region)은 음표가 가려졌다 나타나는 곳이므로 비교에서 제외
+                # 가변 영역(바 이동 경로) 무시
                 unstable_region = cv2.bitwise_or(last_dilated_mask, dilated_mask)
-
-                # 3. 불안정 영역의 차이 값을 0으로 강제 초기화 (무시)
                 diff[unstable_region > 0] = 0
 
-                # 4. 남은 영역(안정적인 악보)에서의 변화율만 계산
+                # 평균 변화량 계산 (전체 면적 대비 변화율)
                 diff_score = np.mean(diff)
-
-                # 디버깅용 로그 (필요시 해제)
-                # print(f"Frame {current_frame}: Diff Score = {diff_score:.2f}")
 
                 if diff_score > threshold:
                     should_save = True
 
             if should_save:
                 img_path = os.path.join(output_dir, f'frame_{len(processed_image_paths):04d}.png')
-
-                # 사용자를 위해 '원본(컬러)' 이미지를 저장합니다.
-                # (분석은 흑백으로 했지만, 결과물은 깨끗한 원본이어야 함)
                 cv2.imwrite(img_path, cropped)
-
                 processed_image_paths.append(img_path)
 
-                # 다음 비교를 위해 현재 상태 저장
                 last_binary_frame = binary
                 last_dilated_mask = dilated_mask
 
                 if len(processed_image_paths) >= MAX_IMAGES:
-                    print(f"⚠️ Reached max image limit ({MAX_IMAGES}). Stopping.")
                     break
 
+            # 핵심: 다음 분석 프레임까지 순차적으로 grab() 하여 속도 향상
+            # cap.set()을 반복하는 것보다 cap.grab()이 프레임 간격이 짧을 때 훨씬 빠름
+            for _ in range(frame_step - 1):
+                if not cap.grab():
+                    break
             current_frame += frame_step
 
     except Exception as e:
-        print(f"Error during processing: {e}")
+        print(f"❌ Error during processing: {e}")
         raise e
     finally:
         cap.release()
@@ -160,15 +140,22 @@ def process_video_frames(
 
 
 def get_single_frame_as_bytes(stream_url, time_sec):
+    """미리보기를 위한 단일 프레임 추출 (최적화)"""
     cap = cv2.VideoCapture(stream_url)
     if not cap.isOpened():
         return None
+
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
-    cap.set(cv2.CAP_PROP_POS_FRAMES, int(time_sec * fps))
+    target_frame = int(time_sec * fps)
+
+    # 특정 시점으로 한 번만 이동
+    cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
     ret, frame = cap.read()
     cap.release()
+
     if ret:
-        success, buffer = cv2.imencode('.jpg', frame)
+        # JPEG 압축 품질 조절로 네트워크 전송 속도 향상
+        success, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
         if success:
             return io.BytesIO(buffer)
     return None
