@@ -45,30 +45,21 @@ body {
 
 .form-container {
     padding: 40px;
-    position: relative; /* 리셋 버튼 절대 위치 배치를 위한 기준점 */
+    position: relative;
 }
 
 /* 리셋 버튼 스타일 */
 .btn-reset {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    background: transparent;
-    border: none;
-    font-size: 1.5rem;
-    color: #adb5bd;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 8px;
-    line-height: 1;
-    border-radius: 50%;
-    z-index: 10;
+    top: 20px; right: 20px;
+    background: transparent; border: none;
+    font-size: 1.5rem; color: #adb5bd; cursor: pointer;
+    transition: all 0.3s ease; padding: 8px; line-height: 1;
+    border-radius: 50%; z-index: 10;
 }
-
 .btn-reset:hover {
-    color: #667eea;
-    background-color: #f1f3f5;
-    transform: rotate(180deg); /* 호버 시 회전 애니메이션 */
+    color: #667eea; background-color: #f1f3f5;
+    transform: rotate(180deg);
 }
 
 /* --- 폼 스타일 --- */
@@ -76,27 +67,18 @@ body {
 .form-group label { display: block; margin-bottom: 12px; font-weight: 600; color: #333; font-size: 1em; }
 
 input:not([type=range]):not([type=checkbox]), textarea {
-    width: 100%;
-    padding: 14px 18px;
-    border: 2px solid #e1e5e9;
-    border-radius: 10px;
-    font-size: 17px;
-    background: #f8f9fa;
-    transition: 0.3s;
-    box-sizing: border-box;
+    width: 100%; padding: 14px 18px;
+    border: 2px solid #e1e5e9; border-radius: 10px;
+    font-size: 17px; background: #f8f9fa;
+    transition: 0.3s; box-sizing: border-box;
 }
-
-input:focus {
-    outline: none;
-    border-color: #667eea;
-    background: white;
-}
+input:focus { outline: none; border-color: #667eea; background: white; }
 
 /* Range Input */
 input[type=range] {
-    -webkit-appearance: none;
-    width: 100%; height: 8px; background: #e1e5e9;
-    border-radius: 5px; padding: 0; outline: none; border: none; margin: 15px 0;
+    -webkit-appearance: none; width: 100%; height: 8px;
+    background: #e1e5e9; border-radius: 5px; padding: 0;
+    outline: none; border: none; margin: 15px 0;
 }
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none; width: 22px; height: 22px;
@@ -104,36 +86,18 @@ input[type=range]::-webkit-slider-thumb {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* [수정] 체크박스 스타일 개선 (정렬 및 마진 해결) */
+/* 체크박스 스타일 */
 .inspection-toggle-group {
-    background: #f1f3f9;
-    padding: 15px 20px; /* 좌우 패딩 약간 증가 */
-    border-radius: 10px;
-    margin-bottom: 30px;
-    /* Flexbox로 변경하여 내부 요소 수직 중앙 정렬 */
-    display: flex;
-    align-items: center;
-    min-height: 60px; /* 최소 높이 확보로 안정감 부여 */
+    background: #f1f3f9; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px;
+    display: flex; align-items: center; min-height: 60px;
 }
-
-/* 선택자 구체성을 높여(.form-group 추가) 기본 라벨 스타일 덮어쓰기 */
 .form-group .checkbox-container {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 0; /* 마진 강제 제거 */
-    width: 100%;
-    color: #444;
+    display: flex; align-items: center; cursor: pointer;
+    font-weight: 600; font-size: 1rem; margin-bottom: 0; width: 100%; color: #444;
 }
-
 .checkbox-container input {
-    margin-right: 12px;
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    accent-color: #667eea; /* 체크박스 색상 지정 */
+    margin-right: 12px; width: 20px; height: 20px;
+    cursor: pointer; accent-color: #667eea;
 }
 
 /* 레이아웃 유틸 */
@@ -173,7 +137,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 .info-icon:hover .tooltip-box { visibility: visible; opacity: 1; }
 
-/* --- 버튼 --- */
+/* --- 버튼 공통 --- */
 .btn {
     width: 100%; padding: 18px; border: none; border-radius: 10px;
     font-weight: 600; font-size: 1.1em; cursor: pointer; transition: 0.3s;
@@ -196,45 +160,29 @@ input[type=range]::-webkit-slider-thumb {
     background: linear-gradient(135deg, #7b8df1 0%, #8a63c7 100%);
     min-height: 100vh;
 }
-
-/* 검수 컨테이너 */
 .inspection-zone, .inspection-container {
-    margin: 30px auto;
-    background: white; padding: 30px;
-    border-radius: var(--container-radius);
-    box-shadow: var(--shadow);
+    margin: 30px auto; background: white; padding: 30px;
+    border-radius: var(--container-radius); box-shadow: var(--shadow);
 }
 .inspection-container { max-width: 1000px; padding: 40px; }
-
 .inspection-header { margin-bottom: 25px; border-bottom: 2px solid #f1f3f9; padding-bottom: 15px; }
 
-/* 이미지 그리드 */
 .image-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 40px;
-    margin: 30px auto;
-    max-width: 800px;
-    margin-bottom: 100px;
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    gap: 40px; margin: 30px auto; max-width: 800px; margin-bottom: 100px;
 }
-
 .img-item {
     position: relative; border: 3px solid #eee; border-radius: 10px;
     cursor: pointer; overflow: hidden; transition: 0.3s; background: #fff;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
-
 .img-item:not(.selected) { opacity: 0.6; transform: scale(0.98); }
-
 .img-item img { width: 100%; display: block; transition: transform 0.3s; }
 .img-item:hover img { transform: scale(1.01); }
-
 .img-item.selected {
-    border-color: #667eea;
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+    border-color: #667eea; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
     opacity: 1; transform: scale(1); z-index: 1;
 }
-
 .img-overlay {
     position: absolute; top: 15px; right: 15px; background: #667eea;
     color: white; width: 32px; height: 32px; border-radius: 50%;
@@ -243,17 +191,17 @@ input[type=range]::-webkit-slider-thumb {
 }
 .img-item.selected .img-overlay { display: flex; }
 
-/* 검수용 푸터 */
+/* 검수용 & 모달용 공통 버튼 스타일 */
+.btn-finalize { background: var(--run-gradient); color: white; min-width: 250px; }
+.btn-close { background: #6c757d; color: white; }
+
 .inspection-footer {
     position: fixed; bottom: 0; left: 0; right: 0;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px); padding: 20px;
-    display: flex; justify-content: center; gap: 20px; z-index: 100;
+    background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+    padding: 20px; display: flex; justify-content: center; gap: 20px; z-index: 100;
     box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
 }
-
-.btn-finalize { background: var(--run-gradient); color: white; min-width: 250px; }
-.btn-close { background: #6c757d; color: white; min-width: 120px; }
+.inspection-footer .btn-close { min-width: 120px; }
 
 /* --- 모달 & 리포트 버튼 --- */
 .btn-float-report {
@@ -276,6 +224,37 @@ input[type=range]::-webkit-slider-thumb {
 }
 .modal-header { font-size: 1.3rem; font-weight: bold; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
 .debug-info { background: #f8f9fa !important; color: #666 !important; font-family: 'Cascadia Code', monospace !important; font-size: 0.85rem !important; }
+
+/* [수정] 모달 푸터 및 버튼 크기 조정 */
+.modal-footer {
+    display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;
+}
+
+/* 모달 내부 버튼 공통 초기화 (width: 100% 해제) */
+.modal-footer .btn {
+    width: auto;
+    margin: 0;
+    padding: 12px 20px; /* 높이 통일 */
+    font-size: 1rem;
+}
+
+/* 취소 버튼 스타일 및 비율 */
+.modal-footer .btn-close {
+    background: #f1f3f5;
+    color: #495057;
+    flex: 1; /* 1 비율 */
+}
+.modal-footer .btn-close:hover { background: #e9ecef; }
+
+/* 전송 버튼 스타일 및 비율 */
+.btn-send-report {
+    background: var(--run-gradient);
+    color: white;
+    flex: 2; /* 2 비율 (취소보다 2배 큼) */
+    margin-top: 0; /* 기존 마진 제거 */
+}
+.btn-send-report:hover { filter: brightness(1.1); }
+.btn-send-report:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.8; }
 
 /* 로딩 애니메이션 */
 .loading-spinner {
