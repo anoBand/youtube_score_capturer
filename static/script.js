@@ -1,355 +1,293 @@
+/**
+ * static/script.js
+ * YouTube 악보 추출기 메인 로직
+ */
+
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Original script.js content ---
-    const selectionArea = document.getElementById('selectionArea');
-    const videoPreview = document.getElementById('videoPreview');
-    const urlInput = document.getElementById('url');
+    // --- 1. DOM 요소 캐싱 ---
+    const elements = {
+        url: document.getElementById('url'),
+        videoPreview: document.getElementById('videoPreview'),
+        selectionArea: document.getElementById('selectionArea'),
+        startTime: document.getElementById('start_time'),
+        endTime: document.getElementById('end_time'),
+        threshold: document.getElementById('threshold'),
+        interval: document.getElementById('frame_interval_sec'),
+        configForm: document.getElementById('configForm'),
+        runBtn: document.getElementById('runBtn'),
+        downloadBtn: document.getElementById('downloadBtn'),
+        statusArea: document.getElementById('statusArea'),
+        statusMessage: document.getElementById('statusMessage'),
+        inspectionMode: document.getElementById('inspection_mode'),
+        // 모달 관련
+        reportModal: document.getElementById('reportModal'),
+        openReportBtn: document.getElementById('openReportBtn'),
+        closeReportBtn: document.getElementById('closeReportBtn'),
+        sendReportBtn: document.getElementById('sendReportBtn'),
+        debugInfoArea: document.getElementById('reportDebugInfo'),
+        reportDesc: document.getElementById('reportDesc'),
+        reportEmail: document.getElementById('reportEmail')
+    };
+
     const coordTypes = ['x_start', 'x_end', 'y_start', 'y_end'];
-    const startTimeInput = document.getElementById('start_time');
-    const endTimeInput = document.getElementById('end_time');
+    const FORMSPREE_ID = 'mdagplqq';
+    let pdfObjectURL = null;
 
-    function extractVideoId(url) {
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[7].length === 11) ? match[7] : false;
-    }
+    // --- 2. 상태 관리 ---
+    const state = {
+        isDragging: false,
+        startX: 0,
+        startY: 0
+    };
 
-    urlInput.addEventListener('input', (e) => {
-        const videoId = extractVideoId(e.target.value);
-        if (videoId) {
-            const thumbUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-            videoPreview.style.backgroundImage = `url('${thumbUrl}')`;
-        } else {
-            videoPreview.style.backgroundImage = 'none';
+    // --- 3. 유틸리티 함수 ---
+    const utils = {
+        extractVideoId: (url) => {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7].length === 11) ? match[7] : false;
+        },
+        updatePreview: () => {
+            const vals = {};
+            coordTypes.forEach(id => vals[id] = parseInt(document.getElementById(id).value) || 0);
+
+            Object.assign(elements.selectionArea.style, {
+                left: `${vals.x_start}%`,
+                top: `${vals.y_start}%`,
+                width: `${Math.max(0, vals.x_end - vals.x_start)}%`,
+                height: `${Math.max(0, vals.y_end - vals.y_start)}%`
+            });
+        },
+        updateInputValue: (id, value) => {
+            const input = document.getElementById(id);
+            const range = document.getElementById(`${id}_range`);
+            if (input) input.value = value;
+            if (range) range.value = value;
+        },
+        showStatus: (msg, type) => {
+            const colors = {
+                success: '#d4edda',
+                error: '#f8d7da',
+                processing: '#fff3cd'
+            };
+            elements.statusArea.style.display = 'block';
+            elements.statusArea.style.background = colors[type] || '#eee';
+            elements.statusMessage.innerHTML = msg;
         }
+    };
+
+    // --- 4. 이벤트 핸들러 ---
+
+    // 유튜브 썸네일 업데이트
+    elements.url.addEventListener('input', (e) => {
+        const videoId = utils.extractVideoId(e.target.value);
+        elements.videoPreview.style.backgroundImage = videoId
+            ? `url('https://img.youtube.com/vi/${videoId}/maxresdefault.jpg')`
+            : 'none';
     });
 
+    // 좌표 입력 동기화
     coordTypes.forEach(type => {
-        const rangeInput = document.getElementById(`${type}_range`);
-        const numberInput = document.getElementById(type);
-
-        rangeInput.addEventListener('input', (e) => {
-            numberInput.value = e.target.value;
-            updatePreview();
-        });
-
-        numberInput.addEventListener('input', (e) => {
-            rangeInput.value = e.target.value;
-            updatePreview();
-        });
+        const range = document.getElementById(`${type}_range`);
+        const num = document.getElementById(type);
+        [range, num].forEach(el => el.addEventListener('input', (e) => {
+            utils.updateInputValue(type, e.target.value);
+            utils.updatePreview();
+        }));
     });
 
-    function updatePreview() {
-        const vals = {};
-        coordTypes.forEach(id => {
-            vals[id] = parseInt(document.getElementById(id).value) || 0;
-        });
-
-        selectionArea.style.left = vals.x_start + '%';
-        selectionArea.style.top = vals.y_start + '%';
-        selectionArea.style.width = Math.max(0, vals.x_end - vals.x_start) + '%';
-        selectionArea.style.height = Math.max(0, vals.y_end - vals.y_start) + '%';
-    }
-
-    let isDragging = false;
-    let startXPercent = 0;
-    let startYPercent = 0;
-
-    videoPreview.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        const rect = videoPreview.getBoundingClientRect();
-        startXPercent = ((e.clientX - rect.left) / rect.width) * 100;
-        startYPercent = ((e.clientY - rect.top) / rect.height) * 100;
-        startXPercent = Math.max(0, Math.min(100, startXPercent));
-        startYPercent = Math.max(0, Math.min(100, startYPercent));
+    // 드래그 영역 지정
+    elements.videoPreview.addEventListener('mousedown', (e) => {
+        state.isDragging = true;
+        const rect = elements.videoPreview.getBoundingClientRect();
+        state.startX = ((e.clientX - rect.left) / rect.width) * 100;
+        state.startY = ((e.clientY - rect.top) / rect.height) * 100;
     });
 
     window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const rect = videoPreview.getBoundingClientRect();
-        let currentXPercent = ((e.clientX - rect.left) / rect.width) * 100;
-        let currentYPercent = ((e.clientY - rect.top) / rect.height) * 100;
-        currentXPercent = Math.max(0, Math.min(100, currentXPercent));
-        currentYPercent = Math.max(0, Math.min(100, currentYPercent));
+        if (!state.isDragging) return;
+        const rect = elements.videoPreview.getBoundingClientRect();
+        let curX = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+        let curY = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
-        const xStart = Math.round(Math.min(startXPercent, currentXPercent));
-        const xEnd = Math.round(Math.max(startXPercent, currentXPercent));
-        const yStart = Math.round(Math.min(startYPercent, currentYPercent));
-        const yEnd = Math.round(Math.max(startYPercent, currentYPercent));
-
-        updateInputValue('x_start', xStart);
-        updateInputValue('x_end', xEnd);
-        updateInputValue('y_start', yStart);
-        updateInputValue('y_end', yEnd);
-        updatePreview();
+        utils.updateInputValue('x_start', Math.round(Math.min(state.startX, curX)));
+        utils.updateInputValue('x_end', Math.round(Math.max(state.startX, curX)));
+        utils.updateInputValue('y_start', Math.round(Math.min(state.startY, curY)));
+        utils.updateInputValue('y_end', Math.round(Math.max(state.startY, curY)));
+        utils.updatePreview();
     });
 
-    window.addEventListener('mouseup', () => {
-        isDragging = false;
-    });
+    window.addEventListener('mouseup', () => state.isDragging = false);
 
-    function updateInputValue(id, value) {
-        document.getElementById(id).value = value;
-        document.getElementById(`${id}_range`).value = value;
-    }
+    // 프레임 미리보기 로드
+    async function fetchFrame() {
+        const videoId = utils.extractVideoId(elements.url.value);
+        if (!videoId || !elements.startTime.value) return;
 
-    async function fetchCurrentFrame(timeStr) {
-        const url = urlInput.value;
-        const targetTime = (typeof timeStr === 'string' && timeStr.trim() !== '') ? timeStr : startTimeInput.value;
-        const videoId = extractVideoId(url);
-        if (!videoId || !targetTime) return;
-
-        videoPreview.style.opacity = '0.5';
+        elements.videoPreview.style.opacity = '0.5';
         const formData = new FormData();
-        formData.append('url', url);
-        formData.append('start_time', targetTime);
+        formData.append('url', elements.url.value);
+        formData.append('start_time', elements.startTime.value);
 
         try {
-            const response = await fetch('/get_frame', { method: 'POST', body: formData });
-            if (response.ok) {
-                const blob = await response.blob();
-                const frameUrl = window.URL.createObjectURL(blob);
-                videoPreview.style.backgroundImage = `url('${frameUrl}')`;
+            const resp = await fetch('/get_frame', { method: 'POST', body: formData });
+            if (resp.ok) {
+                const blob = await resp.blob();
+                elements.videoPreview.style.backgroundImage = `url('${URL.createObjectURL(blob)}')`;
             }
-        } catch (error) {
-            console.error('프레임 로드 실패:', error);
         } finally {
-            videoPreview.style.opacity = '1';
+            elements.videoPreview.style.opacity = '1';
         }
     }
 
-    startTimeInput.addEventListener('change', (e) => fetchCurrentFrame(e.target.value));
-    endTimeInput.addEventListener('change', (e) => fetchCurrentFrame(e.target.value));
-    urlInput.addEventListener('blur', () => {
-        if (startTimeInput.value) fetchCurrentFrame(startTimeInput.value);
-    });
+    [elements.startTime, elements.endTime].forEach(el => el.addEventListener('change', fetchFrame));
+    elements.url.addEventListener('blur', fetchFrame);
 
-    updatePreview();
-
-    let pdfObjectURL = null;
-    const configForm = document.getElementById('configForm');
-    const runBtn = document.getElementById('runBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-
-    configForm.addEventListener('submit', async function(e) {
+    // 실행 및 다운로드
+    elements.configForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        // Add validation for threshold here
-        const thresholdInput = document.getElementById('threshold');
-        const thresholdValue = parseFloat(thresholdInput.value);
+        // 유효성 검사
+        const thres = parseFloat(elements.threshold.value);
+        if (thres < 0.5 || thres > 15.0) return utils.showStatus('감도는 0.5~15 사이여야 합니다.', 'error');
 
-        if (isNaN(thresholdValue) || thresholdValue < 0.5 || thresholdValue > 15.0) {
-            showStatus('감도는 0.5에서 15 사이어야 합니다', 'error');
-            thresholdInput.focus();
-            return; // Prevent form submission
-        }
+        const interval = parseFloat(elements.interval.value);
+        if (interval <= 0 || interval > 3.0) return utils.showStatus('간격은 0.1~3.0초 사이여야 합니다.', 'error');
 
-        // New validation for frame_interval_sec
-        const frameIntervalInput = document.getElementById('frame_interval_sec');
-        const frameIntervalValue = parseFloat(frameIntervalInput.value);
+        if (pdfObjectURL) URL.revokeObjectURL(pdfObjectURL);
 
-        if (isNaN(frameIntervalValue) || frameIntervalValue <= 0 || frameIntervalValue > 3.0) { // Added <=0 to match existing number input min="0" and step="0.1"
-            showStatus('처리 간격은 3초를 넘을 수 없습니다', 'error');
-            frameIntervalInput.focus();
-            return; // Prevent form submission
-        }
-
-        if (pdfObjectURL) window.URL.revokeObjectURL(pdfObjectURL);
-        runBtn.disabled = true;
-        runBtn.innerHTML = '<span class="loading-spinner"></span> 처리 중...';
-        showStatus('영상을 분석하여 악보를 추출하고 있습니다.', 'processing');
+        elements.runBtn.disabled = true;
+        elements.runBtn.innerHTML = '<span class="loading-spinner"></span> 처리 중...';
+        utils.showStatus('분석 중입니다. 잠시만 기다려주세요.', 'processing');
 
         try {
-            const response = await fetch('/execute', { method: 'POST', body: new FormData(this) });
-            if (response.ok) {
-                const blob = await response.blob();
-                pdfObjectURL = window.URL.createObjectURL(blob);
-                downloadBtn.disabled = false;
-                showStatus('PDF 생성이 완료되었습니다 (자동 다운로드). 다운로드 버튼을 눌러 받을 수도 있습니다!', 'success');
+            const formData = new FormData(this);
+            const isInspect = elements.inspectionMode?.checked;
+            formData.set('inspection_mode', !!isInspect);
 
-                const autoDownloadLink = document.createElement('a');
-                autoDownloadLink.href = pdfObjectURL;
-                autoDownloadLink.download = 'sheet_music_score.pdf';
-                document.body.appendChild(autoDownloadLink);
-                autoDownloadLink.click();
-                document.body.removeChild(autoDownloadLink);
+            const response = await fetch('/execute', { method: 'POST', body: formData });
+            if (!response.ok) throw new Error((await response.json()).error || '분석 실패');
+
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const res = await response.json();
+                if (res.session_id) {
+                    const url = `/inspect/${res.session_id}`;
+                    if (!window.open(url, '_blank')) {
+                        utils.showStatus(`완료! 팝업 차단됨: <a href="${url}" target="_blank">[여기]</a> 클릭`, 'success');
+                    } else {
+                        utils.showStatus('새 탭에서 검수 페이지가 열렸습니다.', 'success');
+                    }
+                }
             } else {
-                const err = await response.json();
-                showStatus('실패: ' + (err.error || '알 수 없는 오류'), 'error');
+                const blob = await response.blob();
+                pdfObjectURL = URL.createObjectURL(blob);
+                elements.downloadBtn.disabled = false;
+                utils.showStatus('완료되었습니다! 자동으로 다운로드됩니다.', 'success');
+
+                const link = document.createElement('a');
+                link.href = pdfObjectURL;
+                link.download = 'score.pdf';
+                link.click();
             }
-        } catch (error) {
-            showStatus('서버 연결 실패: ' + error.message, 'error');
+        } catch (err) {
+            utils.showStatus(`실패: ${err.message}`, 'error');
         } finally {
-            runBtn.disabled = false;
-            runBtn.innerHTML = '▶️ 실행';
+            elements.runBtn.disabled = false;
+            elements.runBtn.innerHTML = '▶️ 실행';
         }
     });
 
-    downloadBtn.addEventListener('click', () => {
+    elements.downloadBtn.addEventListener('click', () => {
+        if (!pdfObjectURL) return;
         const a = document.createElement('a');
         a.href = pdfObjectURL;
-        a.download = 'sheet_music_score.pdf';
+        a.download = 'score.pdf';
         a.click();
     });
 
-    function showStatus(msg, type) {
-        const area = document.getElementById('statusArea');
-        area.style.display = 'block';
-        area.style.background = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#fff3cd';
-        document.getElementById('statusMessage').innerHTML = msg;
-    }
+    // --- 5. 초기 상태 설정 ---
+    utils.updatePreview();
 
-    // --- Driver.js tour ---
-    const driverObj = window.driver.js.driver({
-        showProgress: true,
-        animate: true,
-        allowClose: true,
-        doneBtnText: '완료',
-        nextBtnText: '다음',
-        prevBtnText: '이전',
-        steps: [
-            { element: '#tour-url', popover: { title: '1. 영상 주소 입력', description: '악보를 추출할 YouTube 영상의 URL을 여기에 붙여넣으세요.', side: "bottom", align: 'start' } },
-            { element: '#tour-time', popover: { title: '2. 시간 설정', description: '추출을 시작할 시간과 종료할 시간을 입력합니다.', side: "bottom", align: 'start' } },
-            { element: '#tour-preview', popover: { title: '3. 영역 지정', description: '이 박스를 <strong>마우스로 드래그</strong>하여 악보 영역을 파란색 박스로 감싸주세요.<br>하단에서 세부적으로 조정할 수 있습니다.', side: "top", align: 'start' } },
-            { element: '#tour-advanced', popover: { title: '4. 고급 설정', description: '감도와 처리 간격입니다.<br>일반적으로는 <strong>수정할 필요가 없습니다.</strong>', side: "top", align: 'start' } }
-        ]
-    });
-    driverObj.drive();
-
-    // --- Logic from inline script in index.html ---
-
-    // URL State Management
-    const fields = [
-        'url', 'start_time', 'end_time',
-        'x_start', 'x_end', 'y_start', 'y_end',
-        'threshold', 'frame_interval_sec'
-    ];
+    // URL 파라미터 복원
+    const fields = ['url', 'start_time', 'end_time', 'x_start', 'x_end', 'y_start', 'y_end', 'threshold', 'frame_interval_sec'];
     const params = new URLSearchParams(window.location.search);
-    let restored = false;
 
     fields.forEach(id => {
-        const element = document.getElementById(id);
-        if (element && params.has(id)) {
-            element.value = params.get(id);
-            restored = true;
-            const rangeElement = document.getElementById(id + '_range');
-            if (rangeElement) rangeElement.value = params.get(id);
-        }
-    });
-
-    function updateURL() {
-        const newParams = new URLSearchParams();
-        fields.forEach(id => {
-            const element = document.getElementById(id);
-            if (element && element.value) newParams.set(id, element.value);
-        });
-        window.history.replaceState({}, '', '?' + newParams.toString());
-    }
-
-    fields.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('input', updateURL);
-            element.addEventListener('change', updateURL);
-        }
-    });
-
-    if (restored) {
-        setTimeout(() => {
-            fields.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.dispatchEvent(new Event('input', { bubbles: true }));
-                    element.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            });
-        }, 100);
-    }
-
-    // Error Reporting Modal Logic
-    const reportModal = document.getElementById('reportModal');
-    const openReportBtn = document.getElementById('openReportBtn');
-    const closeReportBtn = document.getElementById('closeReportBtn');
-    const sendReportBtn = document.getElementById('sendReportBtn');
-    const debugInfoArea = document.getElementById('reportDebugInfo');
-    const FORMSPREE_ID = 'mdagplqq';
-
-
-    openReportBtn.addEventListener('click', () => {
-        const data = {
-            url: document.getElementById('url').value || '(비어있음)',
-            time: `${document.getElementById('start_time').value || '0'} ~ ${document.getElementById('end_time').value || 'end'}`,
-            crop_x: `Start: ${document.getElementById('x_start').value}, End: ${document.getElementById('x_end').value}`,
-            crop_y: `Start: ${document.getElementById('y_start').value}, End: ${document.getElementById('y_end').value}`,
-            threshold: document.getElementById('threshold').value,
-            interval: document.getElementById('frame_interval_sec').value,
-            userAgent: navigator.userAgent,
-            timestamp: new Date().toLocaleString()
-        };
-        const formattedInfo =
-`[시스템 및 입력 정보]
-- 타임스탬프: ${data.timestamp}
-- YouTube URL: ${data.url}
-- 구간: ${data.time}
-- X축 설정: ${data.crop_x}
-- Y축 설정: ${data.crop_y}
-- 감도(Threshold): ${data.threshold}
-- 간격(Interval): ${data.interval}
-- 브라우저: ${data.userAgent}`;
-        debugInfoArea.value = formattedInfo;
-        reportModal.classList.add('open');
-    });
-
-    const closeModal = () => reportModal.classList.remove('open');
-    closeReportBtn.addEventListener('click', closeModal);
-    reportModal.addEventListener('click', (e) => {
-        if (e.target === reportModal) closeModal();
-    });
-
-    // 3. 안전한 익명 전송 (HTTP POST)
-    sendReportBtn.addEventListener('click', () => {
-        const desc = document.getElementById('reportDesc').value.trim();
-        if (!desc) {
-            alert('문제 설명을 간단히라도 적어주세요! 😢');
-            document.getElementById('reportDesc').focus();
-            return;
-        }
-
-        const email = document.getElementById('reportEmail').value.trim();
-        const debugInfo = debugInfoArea.value;
-
-        // 전송 중 상태 표시
-        sendReportBtn.textContent = '보내는 중...';
-        sendReportBtn.disabled = true;
-
-        // Formspree API로 전송 (mailto 대체)
-        fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: desc,
-                _replyto: email ? email : "anonymous@report.com", // 회신용 이메일 필드
-                debug_info: debugInfo
-            })
-        })
-        .then(response => {
-            if (response.ok) {
-                alert('소중한 의견이 안전하게 전달되었습니다! 🚀\n감사합니다.');
-                document.getElementById('reportDesc').value = ''; // 내용 초기화
-                closeModal();
-            } else {
-                alert('전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        if (params.has(id)) {
+            const val = params.get(id);
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = val;
+                const range = document.getElementById(`${id}_range`);
+                if (range) range.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('네트워크 오류가 발생했습니다.');
-        })
-        .finally(() => {
-            // 버튼 상태 복구
-            sendReportBtn.textContent = '🚀 전송하기';
-            sendReportBtn.disabled = false;
-        });
+        }
     });
+
+    // URL 업데이트 로직 (Debounce 적용 가능)
+    function updateURL() {
+        const p = new URLSearchParams();
+        fields.forEach(id => {
+            const val = document.getElementById(id)?.value;
+            if (val) p.set(id, val);
+        });
+        window.history.replaceState({}, '', `?${p.toString()}`);
+    }
+    fields.forEach(id => document.getElementById(id)?.addEventListener('change', updateURL));
+
+    // --- 6. 버그 제보 모달 ---
+    elements.openReportBtn.addEventListener('click', () => {
+        const data = {
+            url: elements.url.value || 'N/A',
+            time: `${elements.startTime.value || '0'}~${elements.endTime.value || '끝'}`,
+            x: `${document.getElementById('x_start').value}-${document.getElementById('x_end').value}`,
+            y: `${document.getElementById('y_start').value}-${document.getElementById('y_end').value}`,
+            agent: navigator.userAgent,
+            timeStr: new Date().toLocaleString()
+        };
+        elements.debugInfoArea.value = `[Info] ${data.timeStr}\nURL: ${data.url}\nRange: ${data.time}\nCropX: ${data.x}, CropY: ${data.y}\nBrowser: ${data.agent}`;
+        elements.reportModal.classList.add('open');
+    });
+
+    const closeModal = () => elements.reportModal.classList.remove('open');
+    elements.closeReportBtn.addEventListener('click', closeModal);
+    elements.reportModal.addEventListener('click', (e) => { if(e.target === elements.reportModal) closeModal(); });
+
+    elements.sendReportBtn.addEventListener('click', async () => {
+        const msg = elements.reportDesc.value.trim();
+        if (!msg) return alert('내용을 입력해주세요.');
+
+        elements.sendReportBtn.textContent = '보내는 중...';
+        elements.sendReportBtn.disabled = true;
+
+        try {
+            const resp = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, _replyto: elements.reportEmail.value || 'anon', info: elements.debugInfoArea.value })
+            });
+            if (resp.ok) {
+                alert('전송되었습니다. 감사합니다!');
+                closeModal();
+            }
+        } finally {
+            elements.sendReportBtn.textContent = '🚀 전송하기';
+            elements.sendReportBtn.disabled = false;
+        }
+    });
+
+    // Driver.js 가이드 (간소화된 설정)
+    if (window.driver) {
+        const driver = window.driver.js.driver({
+            showProgress: true,
+            steps: [
+                { element: '#tour-url', popover: { title: 'URL 입력', description: '추출할 영상 주소를 입력하세요.' } },
+                { element: '#tour-time', popover: { title: '시간 설정', description: '추출할 구간을 입력하세요.' } },
+                { element: '#tour-preview', popover: { title: '영역 지정', description: '마우스 드래그로 악보 범위를 선택하세요.' } }
+            ]
+        });
+        // driver.drive(); // 필요 시 활성화
+    }
 });

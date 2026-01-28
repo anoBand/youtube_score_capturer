@@ -1,0 +1,38 @@
+<!-- templates/inspect.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>악보 검수 - YouTube Score Capturer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="inspection-page">
+    <!-- data-session-id 속성을 통해 JS로 서버 데이터를 전달합니다. -->
+    <div class="inspection-container" id="inspectionContainer" data-session-id="{{ session_id }}">
+        <div class="inspection-header">
+            <h2>추출된 프레임 검수</h2>
+            <p>PDF에 포함하고 싶은 이미지를 클릭하여 선택하세요. (파란 테두리 = 포함)</p>
+            <p><b>중요:</b> 해당 세션은 3분 뒤 초기화됩니다. (재실행 필요)</p>
+        </div>
+
+        <div class="image-grid" id="imageGrid">
+            {% for img in images %}
+            <div class="img-item selected" data-filename="{{ img }}">
+                <img src="{{ url_for('serve_temp_image', session_id=session_id, filename=img) }}" alt="Score Frame" loading="lazy">
+                <div class="img-overlay">✓</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="inspection-footer">
+        <button id="finalizeBtn" class="btn btn-finalize">
+            <span id="btnContent">PDF 생성 및 다운로드</span>
+        </button>
+        <button class="btn btn-close" onclick="window.close()">창 닫기</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='inspect.js') }}"></script>
+</body>
+</html>

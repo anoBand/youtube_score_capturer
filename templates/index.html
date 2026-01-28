@@ -1,3 +1,4 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -71,6 +72,15 @@
                     </div>
                 </div>
 
+                <!-- [추가] 수동 검수 모드 선택 -->
+                <div class="form-group inspection-toggle-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="inspection_mode" name="inspection_mode" value="true">
+                        <span class="checkmark"></span>
+                        수동 검수 모드 활성화 (새 탭에서 이미지 직접 선택)
+                    </label>
+                </div>
+
                 <div class="button-group">
                     <button type="submit" id="runBtn" class="btn btn-run">▶️ 실행</button>
                     <button type="button" id="downloadBtn" class="btn btn-download" disabled>📥 다운로드</button>
@@ -83,12 +93,12 @@
         </div>
     </div>
 
-    <!-- [추가] 리포트 플로팅 버튼 -->
+    <!-- 리포트 플로팅 버튼 -->
     <button type="button" class="btn-float-report" id="openReportBtn">
         🐞 버그/오류 제보
     </button>
 
-    <!-- [추가] 오류 제보 모달 -->
+    <!-- 오류 제보 모달 -->
     <div class="modal-overlay" id="reportModal">
         <div class="modal-content">
             <div class="modal-header">오류 제보 및 피드백</div>
