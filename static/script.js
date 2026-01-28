@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // --- 1. DOM 요소 캐싱 ---
     const elements = {
+        resetBtn: document.getElementById('resetBtn'), // [추가] 리셋 버튼
         url: document.getElementById('url'),
         videoPreview: document.getElementById('videoPreview'),
         selectionArea: document.getElementById('selectionArea'),
@@ -29,18 +30,17 @@ document.addEventListener('DOMContentLoaded', function() {
         reportEmail: document.getElementById('reportEmail')
     };
 
+    // ... (기존 변수 및 state, utils 정의 유지) ...
     const coordTypes = ['x_start', 'x_end', 'y_start', 'y_end'];
     const FORMSPREE_ID = 'mdagplqq';
     let pdfObjectURL = null;
 
-    // --- 2. 상태 관리 ---
     const state = {
         isDragging: false,
         startX: 0,
         startY: 0
     };
 
-    // --- 3. 유틸리티 함수 ---
     const utils = {
         extractVideoId: (url) => {
             const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
@@ -76,8 +76,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // --- 4. 이벤트 핸들러 ---
+    // --- [추가] 초기화 버튼 이벤트 핸들러 ---
+    if (elements.resetBtn) {
+        elements.resetBtn.addEventListener('click', () => {
+            if (confirm('모든 입력값과 설정을 초기화하시겠습니까?')) {
+                // 1. 폼 리셋 (기본값으로 복원)
+                elements.configForm.reset();
 
+                // 2. UI 동기화 (Range 슬라이더 등)를 위해 약간의 지연 후 업데이트
+                setTimeout(() => {
+                    utils.updatePreview(); // 선택 영역 박스 초기화
+                    elements.videoPreview.style.backgroundImage = 'none'; // 썸네일 제거
+
+                    // 3. URL 파라미터 제거
+                    window.history.replaceState({}, '', window.location.pathname);
+
+                    // 4. 상태 메시지 초기화
+                    elements.statusArea.style.display = 'none';
+                    elements.runBtn.disabled = false;
+                    elements.downloadBtn.disabled = true;
+
+                    // 5. PDF Object URL 해제
+                    if (pdfObjectURL) {
+                        URL.revokeObjectURL(pdfObjectURL);
+                        pdfObjectURL = null;
+                    }
+
+                    utils.showStatus('설정이 초기화되었습니다.', 'success');
+                }, 0);
+            }
+        });
+    }
+
+    // ... (기존 이벤트 핸들러들 계속) ...
     // 유튜브 썸네일 업데이트
     elements.url.addEventListener('input', (e) => {
         const videoId = utils.extractVideoId(e.target.value);

@@ -1,57 +1,66 @@
-# YouTube Score Capturer
+# YouTube 악보 캡처 & PDF 변환기
 
-## 소개
-YouTube 영상에서 악보를 자동으로 캡처하여 PDF로 만들어주는 도구임
+YouTube에 올라온 연주 영상 속 악보를 손쉽게 캡처하여 하나의 PDF 파일로 만들어주는 웹 애플리케이션입니다.
 
-## 주요 기능
-- **영상 처리**: yt-dlp로 YouTube 영상을 다운로드하거나 스트리밍하여 분석함
-- **프레임 캡처**: OpenCV를 이용해 설정된 구간, 좌표의 악보 영역만 정밀하게 캡처함
-- **중복 방지**: 이전 프레임과 비교하여 변화가 있는 경우에만 저장하여 중복을 최소화함
-- **PDF 변환**: 캡처된 이미지들을 A4 크기에 맞춰 자동으로 배치하고 하나의 PDF 파일로 생성함
-- **웹 UI 제공**: Flask 기반 웹 인터페이스를 통해 직관적인 조작과 실시간 미리보기를 지원함
+## ✨ 주요 기능
 
-## Installation and Running (Local Development)
-This section guides you through setting up and running the application locally for development purposes.
+- **직관적인 웹 UI**: URL 입력부터 영역 설정, PDF 생성까지 모든 과정을 웹 화면에서 간단히 제어할 수 있습니다.
+- **정밀한 악보 영역 지정**: 영상 미리보기 화면 위에서 마우스로 직접 악보가 표시되는 영역을 드래그하여 설정할 수 있습니다.
+- **자동 중복 제거**: 페이지가 넘어가지 않은 비슷한 악보 이미지는 자동으로 걸러내고, 내용이 변경된 페이지만을 추출하여 깔끔한 결과물을 보장합니다.
+- **수동 검수 모드**: 자동 추출된 이미지를 PDF로 만들기 전, 새 탭에서 직접 확인하고 필요한 페이지만을 선택하여 최종 결과물을 만들 수 있습니다.
+- **실시간 미리보기**: 설정한 시간을 기준으로 영상의 특정 프레임을 미리 받아볼 수 있어, 정확한 악보 시작 지점을 찾는 데 도움이 됩니다.
 
-1.  **Install dependencies**: `pip install -r requirements.txt`
-2.  **Run the application**: `python app.py`
-3.  **Access the web interface**: Open your web browser and navigate to `http://localhost:5000`
+---
 
-## Deployment
-This project has been successfully deployed to a web server. For production deployment of Flask applications, it is recommended to use a WSGI server like Gunicorn or uWSGI, and a reverse proxy like Nginx or Apache.
+## 📖 사용 방법 ([웹사이트 이용](score.clue1887.xyz))
 
-**Example Deployment Steps (using Gunicorn and Nginx):**
+1.  **YouTube URL 입력**: 악보를 추출하고 싶은 YouTube 영상의 주소를 입력합니다. 잠시 후 영상의 썸네일이 나타납니다.
 
-1.  **Prepare your environment**:
-    *   Install necessary system dependencies.
-    *   Set up a virtual environment and install project dependencies: `pip install -r requirements.txt gunicorn`
-2.  **Run Gunicorn**:
-    *   Start Gunicorn to serve the Flask application: `gunicorn -w 4 'app:app'` (replace `app:app` with your application's entry point if different).
-3.  **Configure Nginx**:
-    *   Set up Nginx as a reverse proxy to forward requests to Gunicorn. An example Nginx configuration might look like this:
-        ```nginx
-        server {
-            listen 80;
-            server_name your_domain.com; # Replace with your domain
+2.  **추출 구간 설정**:
+    - **시작 시간**: 악보가 나타나기 시작하는 시간을 `분:초` 형식으로 입력합니다. (`예: 1:23`)
+    - **종료 시간**: 악보가 끝나는 시간을 입력합니다.
 
-            location / {
-                proxy_pass http://127.0.0.1:8000; # Gunicorn default port
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-            }
-        }
-        ```
-    *   Reload Nginx to apply changes.
-4.  **Process Management**:
-    *   Use a process manager like `systemd` or `Supervisor` to ensure Gunicorn runs continuously and restarts automatically.
+3.  **악보 영역 선택**:
+    - 썸네일 미리보기 위에서 **마우스를 드래그**하여 영상 속에서 악보가 표시될 영역을 정확하게 선택합니다.
+    - 또는 하단의 X, Y 좌표를 직접 조절하여 미세 조정할 수 있습니다.
 
-**Note**: Specific deployment steps can vary greatly depending on your server environment and chosen deployment platform (e.g., Docker, Heroku, AWS, Google Cloud). Refer to the documentation for your chosen platform for detailed instructions.
+4.  **(선택) 고급 설정**:
+    - **감도 (Threshold)**: 얼마나 큰 변화가 있어야 새 악보로 인식할지 정합니다. (기본값: 5.0)
+        - **낮은 값**: 더 민감하게 반응하여 작은 변화도 감지합니다. (악보 넘김이 빠르거나 미세할 때)
+        - **높은 값**: 큰 변화가 있을 때만 감지합니다. (영상 노이즈가 심할 때)
+    - **처리 간격 (초)**: 몇 초 간격으로 화면을 분석할지 결정합니다. (기본값: 1.0)
+        - 짧을수록 정밀하지만, 처리 시간이 길어질 수 있습니다.
 
+5.  **(선택) 수동 검수 모드**:
+    - `수동 검수 모드 활성화` 체크박스를 선택하면, 처리 완료 후 결과물이 즉시 다운로드되지 않고 새 탭에서 추출된 이미지 목록을 보여줍니다.
+    - 사용자는 이 목록에서 직접 필요한 이미지만을 선택하여 최종 PDF를 생성할 수 있습니다.
 
+6.  **실행 및 다운로드**:
+    - **▶️ 실행** 버튼을 누릅니다.
+    - 잠시 후 처리가 완료되면 PDF 파일이 자동으로 다운로드됩니다. (수동 검수 모드가 아닐 경우)
 
-## 기술 스택
-- **Language**: Python
-- **Web**: Flask
-- **Media**: OpenCV, yt-dlp, Pillow, FPDF
+---
+
+## ⚙️ 기술 스택
+
+- **Backend**: Python, Flask
+- **Video Processing**: yt-dlp, OpenCV
+- **Image & PDF**: Pillow, FPDF
+- **Frontend**: HTML, CSS, JavaScript
+
+---
+
+## 🛠️ 로컬 개발 환경 설정
+
+1.  **의존성 설치**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  **애플리케이션 실행**:
+    ```bash
+    python app.py
+    ```
+
+3.  **웹 인터페이스 접속**:
+    - 웹 브라우저를 열고 `http://localhost:5000` 주소로 접속합니다.

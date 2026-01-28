@@ -45,6 +45,30 @@ body {
 
 .form-container {
     padding: 40px;
+    position: relative; /* 리셋 버튼 절대 위치 배치를 위한 기준점 */
+}
+
+/* 리셋 버튼 스타일 */
+.btn-reset {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #adb5bd;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 8px;
+    line-height: 1;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.btn-reset:hover {
+    color: #667eea;
+    background-color: #f1f3f5;
+    transform: rotate(180deg); /* 호버 시 회전 애니메이션 */
 }
 
 /* --- 폼 스타일 --- */
