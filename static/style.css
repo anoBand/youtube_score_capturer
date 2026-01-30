@@ -225,6 +225,15 @@ input[type=range]::-webkit-slider-thumb {
 .modal-header { font-size: 1.3rem; font-weight: bold; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
 .debug-info { background: #f8f9fa !important; color: #666 !important; font-family: 'Cascadia Code', monospace !important; font-size: 0.85rem !important; }
 
+/* --- 서비스 공지 모달 내용 스타일 --- */
+#announcementModal .modal-body p {
+    margin-bottom: 15px;
+}
+#announcementModal .modal-body strong {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
 /* [수정] 모달 푸터 및 버튼 크기 조정 */
 .modal-footer {
     display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;

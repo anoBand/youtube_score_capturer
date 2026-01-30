@@ -27,7 +27,10 @@ document.addEventListener('DOMContentLoaded', function() {
         sendReportBtn: document.getElementById('sendReportBtn'),
         debugInfoArea: document.getElementById('reportDebugInfo'),
         reportDesc: document.getElementById('reportDesc'),
-        reportEmail: document.getElementById('reportEmail')
+        reportEmail: document.getElementById('reportEmail'),
+        // 공지 모달 관련
+        announcementModal: document.getElementById('announcementModal'),
+        closeAnnouncementBtn: document.getElementById('closeAnnouncementBtn')
     };
 
     // ... (기존 변수 및 state, utils 정의 유지) ...
@@ -308,6 +311,27 @@ document.addEventListener('DOMContentLoaded', function() {
             elements.sendReportBtn.disabled = false;
         }
     });
+
+    // --- 7. 서비스 공지 모달 ---
+    if (elements.announcementModal && !localStorage.getItem('announcementDismissed')) {
+        elements.announcementModal.classList.add('open');
+    }
+    
+    const closeAnnouncementModal = () => {
+        if (elements.announcementModal) {
+            elements.announcementModal.classList.remove('open');
+            localStorage.setItem('announcementDismissed', 'true');
+        }
+    };
+
+    if (elements.closeAnnouncementBtn) {
+        elements.closeAnnouncementBtn.addEventListener('click', closeAnnouncementModal);
+    }
+    if (elements.announcementModal) {
+        elements.announcementModal.addEventListener('click', (e) => { 
+            if(e.target === elements.announcementModal) closeAnnouncementModal(); 
+        });
+    }
 
     // Driver.js 가이드 (간소화된 설정)
     if (window.driver) {
