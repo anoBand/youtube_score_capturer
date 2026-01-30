@@ -20,10 +20,37 @@ def check_command(cmd):
         return False
 
 
+def update_yt_dlp():
+    """yt-dlp 라이브러리를 최신 버전으로 업데이트"""
+    print("🔄 Updating yt-dlp...")
+    try:
+        # pip를 사용하여 yt-dlp 업그레이드
+        result = subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', '--upgrade', 'yt-dlp'],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print("✅ yt-dlp has been successfully updated.")
+        # 업데이트 상세 정보가 필요하다면 아래 주석 해제
+        # print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print("❌ Failed to update yt-dlp.")
+        print(f"Error: {e.stderr}")
+    except FileNotFoundError:
+        print("❌ 'pip' command not found. Make sure Python and pip are installed correctly.")
+
+
 def debug_yt_environment():
+    # yt-dlp 업데이트 실행
+    update_yt_dlp()
+    
     print("=" * 60)
     print(f"🔍 System & Library Diagnostics")
     print(f"🐍 Python Version: {sys.version.split()[0]}")
+    # 업데이트 후 버전 정보를 다시 로드하기 위해 importlib 사용
+    import importlib
+    importlib.reload(yt_dlp)
     print(f"📺 yt-dlp Version: {yt_dlp.version.__version__}")
 
     # FFmpeg 확인 (악보 캡처 앱의 핵심 의존성)
