@@ -1,129 +1,115 @@
 # debug_ytdlp.py
-# 로컬/서버 배포 환경에서의 yt-dlp 및 멀티미디어 환경 진단 스크립트
+# 로컬 및 서버 환경 통합 진단 스크립트 (v2.0)
 
 import sys
 import os
 import subprocess
-import yt_dlp
 import traceback
-
-# 테스트용 URL (공개된 고화질 영상)
-TEST_URL = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+import importlib
 
 
 def check_command(cmd):
-    """시스템 명령어가 실행 가능한지 확인"""
+    """시스템 명령어(ffmpeg, node, deno 등) 존재 여부 확인"""
     try:
-        subprocess.run([cmd, '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # --version 대신 help나 단순 실행으로 체크 (일부 환경 대응)
+        subprocess.run([cmd, '-v' if cmd == 'node' else '--version'],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError):
         return False
 
 
 def update_yt_dlp():
     """yt-dlp 라이브러리를 최신 버전으로 업데이트"""
-    print("🔄 Updating yt-dlp...")
+    print("🔄 Updating yt-dlp to latest stable...")
     try:
-        # pip를 사용하여 yt-dlp 업그레이드
-        result = subprocess.run(
-            [sys.executable, '-m', 'pip', 'install', '--upgrade', 'yt-dlp'],
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        print("✅ yt-dlp has been successfully updated.")
-        # 업데이트 상세 정보가 필요하다면 아래 주석 해제
-        # print(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print("❌ Failed to update yt-dlp.")
-        print(f"Error: {e.stderr}")
-    except FileNotFoundError:
-        print("❌ 'pip' command not found. Make sure Python and pip are installed correctly.")
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '-U', 'yt-dlp'],
+                       check=True, capture_output=True, text=True)
+        print("✅ Update complete.")
+    except Exception as e:
+        print(f"⚠️ Update failed (skipping): {e}")
 
 
 def debug_yt_environment():
-    # yt-dlp 업데이트 실행
     update_yt_dlp()
-    
-    print("=" * 60)
-    print(f"🔍 System & Library Diagnostics")
-    print(f"🐍 Python Version: {sys.version.split()[0]}")
-    # 업데이트 후 버전 정보를 다시 로드하기 위해 importlib 사용
-    import importlib
+
+    # 모듈 재로드 (업데이트 후 버전 반영)
+    import yt_dlp
     importlib.reload(yt_dlp)
-    print(f"📺 yt-dlp Version: {yt_dlp.version.__version__}")
 
-    # FFmpeg 확인 (악보 캡처 앱의 핵심 의존성)
-    ffmpeg_ok = check_command('ffmpeg')
-    ffprobe_ok = check_command('ffprobe')
-    print(f"🎬 FFmpeg Installed: {'✅ Yes' if ffmpeg_ok else '❌ No'}")
-    print(f"🔎 FFprobe Installed: {'✅ Yes' if ffprobe_ok else '❌ No'}")
+    print("\n" + "=" * 60)
+    print(f"🔍 [System Diagnostics]")
+    print(f"🐍 Python:  {sys.version.split()[0]}")
+    print(f"📺 yt-dlp:  {yt_dlp.version.__version__}")
 
-    # 쿠키 파일 감지
-    cookie_file = '/app/cookies.txt'
+    # 핵심 의존성 체크
+    deps = {
+        'FFmpeg': 'ffmpeg',
+        'Node.js': 'node',
+        'Deno': 'deno'
+    }
+    for name, cmd in deps.items():
+        status = "✅ Found" if check_command(cmd) else "❌ Not Found"
+        print(f"🛠️  {name:7}: {status}")
+
+    # 쿠키 파일 확인
+    cookie_file = 'cookies.txt'
     has_cookies = os.path.exists(cookie_file)
-    print(f"🍪 cookies.txt Found: {'✅ Yes (Auto-loading)' if has_cookies else 'ℹ️  No (Using guest mode)'}")
-    print("=" * 60)
+    print(f"🍪 Cookies: {'✅ cookies.txt loaded' if has_cookies else 'ℹ️  Guest Mode (No cookies.txt)'}")
+    print("=" * 60 + "\n")
 
+    # [핵심 옵션 최적화]
     ydl_opts = {
         'format': 'best',
         'quiet': False,
-        'verbose': True,
+        'verbose': True,  # 상세 로그 유지 (디버깅용)
         'no_warnings': False,
-        'socket_timeout': 15,
         'nocheckcertificate': True,
 
-        # [핵심] 이 줄을 추가해야 로컬에 설치된 Node.js를 인식합니다!
-        'js_runtimes': {'node': {}, 'deno': {}},
-        # [★추가] 외부 챌린지 해결 스크립트 다운로드 허용
-        'remote_components': {'ejs': 'github'},
-    }
-    # 쿠키가 존재할 경우에만 경로 추가
-    if has_cookies:
-        ydl_opts['cookiefile'] = cookie_file
+        # JS 런타임: 설치된 것이 있다면 자동으로 선택함
+        'js_runtimes': {'deno': {}, 'node': {}},
 
-    print(f"🚀 Testing YouTube Access: {TEST_URL}")
-    print("-" * 60)
+        # 외부 챌린지 해결 스크립트 (최신 봇 탐지 우회 필수)
+        'remote_components': ['ejs:github'],
+
+        # 쿠키 설정
+        'cookiefile': cookie_file if has_cookies else None,
+
+        # PO Token: Deno/Node가 자동으로 생성하도록 빈 값 유지
+        'extractor_args': {
+            'youtube': {
+                'po_token': [],
+            }
+        },
+    }
+
+    test_url = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+    print(f"🚀 Testing YouTube Access: {test_url}")
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # 1. 메타데이터 및 스트림 정보 추출
-            info = ydl.extract_info(TEST_URL, download=False)
+            info = ydl.extract_info(test_url, download=False)
 
-            print("-" * 60)
+            print("\n" + "-" * 60)
             print("✅ CONNECTION SUCCESS!")
-            print(f"📹 Title: {info.get('title')}")
+            print(f"📹 Title:   {info.get('title')}")
             print(f"📊 Channel: {info.get('uploader')}")
-            print(f"🎞️  Selected Format: {info.get('format_id')} ({info.get('resolution')})")
+            print(f"🎞️  Format:  {info.get('format_id')} ({info.get('resolution')})")
 
-            # 스트림 URL 존재 여부 확인
-            stream_url = info.get('url')
-            if stream_url:
-                print(f"🔗 Stream URL Found (Length: {len(stream_url)} chars)")
-                print(f"🌐 URL Preview: {stream_url[:70]}...")
+            if info.get('url'):
+                print("🔗 Stream URL generated successfully.")
             else:
-                print("⚠️  Warning: Metadata fetched, but direct stream URL is missing.")
-
-    except yt_dlp.utils.DownloadError as e:
-        error_msg = str(e)
-        print("-" * 60)
-        print("❌ DOWNLOAD ERROR")
-        print(f"Message: {error_msg}")
-
-        print("\n[Diagnostic Guide]")
-        if "429" in error_msg:
-            print("👉 Rate Limited: 요청이 너무 많습니다. IP가 일시적으로 제한되었습니다.")
-        elif "403" in error_msg or "Sign in" in error_msg:
-            print("👉 Access Denied: 유튜브가 이 환경을 봇으로 의심합니다. 쿠키가 필요할 수 있습니다.")
-        elif "format" in error_msg:
-            print("👉 Format Error: 요청한 화질 옵션이 해당 영상에 존재하지 않습니다.")
-        else:
-            print("👉 Network/IP Issue: 네트워크 연결이나 ISP의 유튜브 접속 제한을 확인하세요.")
+                print("⚠️  Metadata fetched, but no direct stream URL found.")
 
     except Exception as e:
-        print("-" * 60)
-        print("❌ UNEXPECTED SYSTEM ERROR")
-        traceback.print_exc()
+        print("\n" + "-" * 60)
+        print("❌ CRITICAL ERROR")
+        if "403" in str(e) or "bot" in str(e).lower():
+            print("👉 YouTube blocked this request. Check your cookies.txt or Server IP.")
+        elif "Node" in str(e) or "Deno" in str(e):
+            print("👉 JavaScript Runtime issue. Install Node.js or Deno on your server.")
+        else:
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
