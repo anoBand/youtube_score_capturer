@@ -33,13 +33,13 @@ def debug_yt_environment():
     print(f"🔎 FFprobe Installed: {'✅ Yes' if ffprobe_ok else '❌ No'}")
 
     # 쿠키 파일 감지
-    cookie_file = 'cookies.txt'
+    cookie_file = '/app/cookies.txt'
     has_cookies = os.path.exists(cookie_file)
     print(f"🍪 cookies.txt Found: {'✅ Yes (Auto-loading)' if has_cookies else 'ℹ️  No (Using guest mode)'}")
     print("=" * 60)
 
     ydl_opts = {
-        'format': 'bestvideo[height<=480][ext=mp4]/best[height<=480]/best',
+        'format': 'best',
         'quiet': False,
         'verbose': True,
         'no_warnings': False,

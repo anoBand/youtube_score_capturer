@@ -33,33 +33,33 @@ if not os.path.exists(TEMP_BASE_DIR):
 # 1. 자동 업데이트 및 유지보수 스케줄러
 # ---------------------------------------------------------
 
-def update_yt_dlp():
-    """서버 시작 시 yt-dlp 라이브러리를 최신 상태로 업데이트합니다."""
-    print("Checking for yt-dlp updates...")
-    try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        print("✅ yt-dlp is up-to-date.")
-    except Exception as e:
-        print(f"⚠️ Failed to update yt-dlp: {e}")
+# def update_yt_dlp():
+#     """서버 시작 시 yt-dlp 라이브러리를 최신 상태로 업데이트합니다."""
+#     print("Checking for yt-dlp updates...")
+#     try:
+#         subprocess.check_call(
+#             [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
+#             stdout=subprocess.DEVNULL,
+#             stderr=subprocess.DEVNULL
+#         )
+#         print("✅ yt-dlp is up-to-date.")
+#     except Exception as e:
+#         print(f"⚠️ Failed to update yt-dlp: {e}")
 
 
-def start_periodic_update():
-    """24시간마다 yt-dlp를 업데이트하고 서버를 재시작합니다."""
-
-    def job():
-        while True:
-            time.sleep(86400)
-            print("🔄 Performing daily yt-dlp update...")
-            update_yt_dlp()
-            print("🛑 Restarting server to apply updates...")
-            os._exit(0)
-
-    thread = threading.Thread(target=job, daemon=True)
-    thread.start()
+# def start_periodic_update():
+#     """24시간마다 yt-dlp를 업데이트하고 서버를 재시작합니다."""
+#
+#     def job():
+#         while True:
+#             time.sleep(86400)
+#             print("🔄 Performing daily yt-dlp update...")
+#             update_yt_dlp()
+#             print("🛑 Restarting server to apply updates...")
+#             os._exit(0)
+#
+#     thread = threading.Thread(target=job, daemon=True)
+#     thread.start()
 
 
 # ---------------------------------------------------------
@@ -277,10 +277,10 @@ def finalize():
 if __name__ == '__main__':
     # 1. 초기화 작업
     cleanup_temp_dir_startup()
-    update_yt_dlp()
-
-    # 2. 백그라운드 스레드들 실행
-    start_periodic_update()
+    # update_yt_dlp()
+    #
+    # # 2. 백그라운드 스레드들 실행
+    # start_periodic_update()
     threading.Thread(target=cleanup_worker, daemon=True).start()
 
     # 3. 서버 실행
