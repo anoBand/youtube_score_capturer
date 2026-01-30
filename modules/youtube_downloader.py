@@ -1,73 +1,94 @@
 # modules/youtube_downloader.py
-
-import yt_dlp
 import os
+import sys
+import subprocess
+import io
+import cv2
 
 
-def download_1080p_video_only(url, output_dir):
-    # 다운로드 결과 파일 경로 설정
-    output_path = os.path.join(output_dir, 'video.mp4')
+def get_bin_path(bin_name):
+    """ PyInstaller 번들 내부의 bin 폴더에서 실행 파일 경로 반환 """
+    if sys.platform == "win32":
+        bin_name += ".exe"
 
-    ydl_opts = {
-        # [기존 유지] 1080p 이하 mp4(avc1) 우선 선택
-        'format': 'bestvideo[ext=mp4][height<=1080][vcodec^=avc1]/bestvideo[ext=mp4][height<=1080]',
-        'noplaylist': True,
-        'outtmpl': output_path,
-        'overwrites': True,
-        'quiet': True,
-        'no_warnings': True,
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, 'bin', bin_name)
+    return os.path.join(os.path.abspath("."), 'bin', bin_name)
 
-        # [개선] 웹 서비스 안정성을 위한 추가 설정
-        'extractor_retries': 3,
-        'socket_timeout': 30,  # 30초 동안 응답 없으면 타임아웃
-        'nocheckcertificate': True,  # SSL 인증서 검증 생략 (서버 환경 호환성)
-        'no_mtime': True,  # 파일 수정 시간을 유튜브 업로드 시간으로 맞추지 않음
 
-        # [핵심] debug_ytdlp.py에서 성공한 설정 추가
-        'js_runtimes': {'node': {}, 'deno': {}},
+def get_startup_info():
+    """ 윈도우에서 서브프로세스 실행 시 콘솔 창이 뜨지 않도록 설정 """
+    if sys.platform == "win32":
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        return startupinfo
+    return None
 
-        # [권장] 챌린지 해결용 컴포넌트 (경고 해결용)
-        'remote_components': {'ejs': 'github'},
 
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        },
-    }
-
-    print(f"📥 Downloading video: {url}")
+def get_video_stream_url(url):
+    """ yt-dlp를 사용하여 영상 스트림 URL을 가져옵니다. (사용자 IP 사용) """
+    ytdlp_path = get_bin_path('yt-dlp')
+    startup_info = get_startup_info()
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # 추출 전 정보 확인 (URL 유효성 체크)
-            # info = ydl.extract_info(url, download=True)
-            ydl.download([url])
-
-        if os.path.exists(output_path):
-            print(f"✅ Download success: {output_path}")
-            return output_path
-        else:
-            print("❌ Download failed: File not found after process.")
-            return None
-
-    except yt_dlp.utils.DownloadError as de:
-        print(f"❌ YouTube Download Error: {str(de)}")
-        return None
-    except Exception as e:
-        print(f"❌ Unexpected Error during download: {str(e)}")
-        return None
-
-def get_video_stream_url(youtube_url):
-    """영상을 다운로드하지 않고 OpenCV가 읽을 수 있는 스트리밍 URL만 반환합니다."""
-    ydl_opts = {
-        'format': 'bestvideo[height<=480][ext=mp4]/bestvideo[height<=480]', # 빠른 로딩을 위해 저화질 선택
-        'quiet': True,
-        'no_warnings': True,
-    }
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(youtube_url, download=False)
-            return info['url']
+        cmd = [ytdlp_path, "-g", "-f", "bestvideo", url]
+        # startupinfo 옵션 추가
+        result = subprocess.check_output(
+            cmd,
+            stderr=subprocess.STDOUT,
+            text=True,
+            startupinfo=startup_info,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        )
+        return result.strip()
     except Exception as e:
         print(f"Error fetching stream URL: {e}")
+        return None
+
+
+def get_single_frame_as_bytes(stream_url, seconds):
+    """ OpenCV를 사용하여 특정 시점의 프레임을 캡처합니다. """
+    cap = cv2.VideoCapture(stream_url)
+    cap.set(cv2.CAP_PROP_POS_MSEC, seconds * 1000)
+    success, frame = cap.read()
+    if success:
+        _, buffer = cv2.imencode('.jpg', frame)
+        cap.release()
+        return io.BytesIO(buffer)
+    cap.release()
+    return None
+
+
+def download_youtube_video(url, download_dir):
+    """ 영상을 로컬 임시 폴더로 다운로드합니다. """
+    ytdlp_path = get_bin_path('yt-dlp')
+    ffmpeg_path = get_bin_path('ffmpeg')
+    output_template = os.path.join(download_dir, 'video.%(ext)s')
+    startup_info = get_startup_info()
+
+    try:
+        # ffmpeg-location을 지정하여 빌드 내부의 ffmpeg를 사용하게 함
+        cmd = [
+            ytdlp_path,
+            "-f", "bestvideo",
+            "--ffmpeg-location", os.path.dirname(ffmpeg_path),
+            "-o", output_template,
+            url
+        ]
+
+        # startupinfo 옵션 추가
+        subprocess.check_call(
+            cmd,
+            startupinfo=startup_info,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        )
+
+        # 실제 생성된 파일명 찾기
+        for f in os.listdir(download_dir):
+            if f.startswith('video'):
+                return os.path.join(download_dir, f)
+        return None
+    except Exception as e:
+        print(f"Download Error: {e}")
         return None

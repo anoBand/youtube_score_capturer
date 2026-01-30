@@ -1,22 +1,17 @@
-FROM python:3.10-slim
+# 가장 가벼운 Nginx 이미지를 베이스로 사용
+FROM nginx:alpine
 
-WORKDIR /app
+# 기본 Nginx 설정 파일 삭제 (필요 시 커스텀 설정을 위해)
+# RUN rm /etc/nginx/conf.d/default.conf
 
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libgl1 \
-    libglib2.0-0 \
-    nodejs \
-    && rm -rf /var/lib/apt/lists/*
+# 현재 폴더의 index.html을 Nginx의 기본 웹 루트 폴더로 복사
+COPY index.html /usr/share/nginx/html/index.html
 
-COPY requirements.txt .
-# 1. 고정된 requirements 설치
-RUN pip install --no-cache-dir -r requirements.txt
-# 2. yt-dlp만 별도로 최신 버전 강제 업데이트
-RUN pip install --upgrade --no-cache-dir yt-dlp
+# (선택 사항) 이미지 등 추가 정적 리소스가 있다면 폴더째 복사
+# COPY static/ /usr/share/nginx/html/static/
 
-COPY . .
-RUN mkdir -p temp
-EXPOSE 5000
+# Nginx의 기본 포트인 80번 노출
+EXPOSE 80
 
-CMD ["python", "app.py"]
+# Nginx 실행
+CMD ["nginx", "-g", "daemon off;"]

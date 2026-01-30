@@ -5,6 +5,7 @@
 *.swo
 
 # Build & Cache
+bin/
 build/
 dist/
 __pycache__/
@@ -26,6 +27,7 @@ wheels/
 .installed.cfg
 *.egg
 .cache
+*.spec
 
 # Virtual Environments
 .env

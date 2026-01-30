@@ -2,7 +2,7 @@
 .git/
 .idea/
 .vscode/
-
+.venv/
 
 # Python cache
 __pycache__/
@@ -27,3 +27,9 @@ GEMINI.md
 docker-compose.yml
 .dockerignore
 .gitignore
+
+# Build
+dist/
+build/
+bin/
+*.spec

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Score Capturer - Download Hub</title>
+    <style>
+        :root { --primary: #ff0000; --dark: #1a1a1a; --gray: #f4f4f4; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--gray); color: var(--dark); }
+        .card { background: white; padding: 3rem; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); max-width: 500px; width: 90%; text-align: center; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; color: var(--primary); }
+        p { color: #666; margin-bottom: 2rem; }
+        .features { text-align: left; background: #fafafa; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; font-size: 0.95rem; }
+        .features div { margin: 8px 0; }
+        .download-group { display: flex; flex-direction: column; gap: 12px; }
+        .btn { display: block; padding: 16px; border-radius: 12px; text-decoration: none; font-weight: bold; transition: all 0.2s; }
+        .btn-win { background: #0078d4; color: white; }
+        .btn-mac { background: var(--dark); color: white; }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .footer-links { margin-top: 2rem; font-size: 0.85rem; }
+        .footer-links a { color: #999; text-decoration: none; margin: 0 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🎼 Score Capturer</h1>
+        <p>유튜브 영상 속 악보를 자동으로 감지하여<br>고화질 PDF로 추출하세요.</p>
+
+        <div class="features">
+            <div>🚀 <b>Local Processing:</b> 모든 작업은 귀하의 PC에서 안전하게 수행됩니다.</div>
+            <div>🛡️ <b>Privacy First:</b> 서버에 데이터를 전송하지 않아 IP 차단 위험이 낮습니다.</div>
+            <div>✨ <b>High Quality:</b> AI 기반 프레임 감지로 중복 없는 악보를 생성합니다.</div>
+        </div>
+
+        <div class="download-group">
+            <a href="https://github.com/anoBand/youtube_score_capturer/releases/download/1.0.0/app.zip" class="btn btn-win">Windows용 다운로드 (.zip)</a>
+            <a href="https://github.com/사용자/레포지토리/releases/latest/download/ScoreCapturer_Mac.zip" class="btn btn-mac" onclick="alert('준비중'); return false;">macOS용 다운로드 (.zip)</a>
+        </div>
+
+        <div class="footer-links">
+            <a href="https://github.com/사용자/레포지토리">GitHub Repository</a>
+            <a href="https://개인사이트주소">Developer Blog</a>
+        </div>
+    </div>
+</body>
+</html>
