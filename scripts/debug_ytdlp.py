@@ -58,6 +58,9 @@ def debug_yt_environment():
     print(f"🍪 Cookies: {'✅ cookies.txt loaded' if has_cookies else 'ℹ️  Guest Mode (No cookies.txt)'}")
     print("=" * 60 + "\n")
 
+    MY_PO_TOKEN = "web+여기에_복사한_poToken_전체"
+    MY_VISITOR_DATA = "여기에_복사한_visitorData"
+
     # [핵심 옵션 최적화]
     ydl_opts = {
         'format': 'best',
