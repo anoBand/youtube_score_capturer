@@ -7,12 +7,26 @@
     <title>YouTube 악보 추출기</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* 업데이트 모달을 위한 추가 스타일 */
+        .update-highlight {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        .version-tag {
+            background: #1e293b;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: #94a3b8;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>YouTube 악보 추출기</h1>
-            <p>컴퓨터 환경에 최적화된 악보 변환 툴을 자유롭게 사용해보세요</p>
+            <p>컴퓨터 환경에 최적화된 악보 변환 툴을 자유롭게 사용해보세요 <span class="version-tag">{{ version }}</span></p>
         </div>
 
         <div class="form-container">
@@ -20,7 +34,6 @@
             <button type="button" id="resetBtn" class="btn-reset" title="설정 초기화">↻</button>
 
             <form id="configForm">
-
                 <div class="form-group" id="tour-url">
                     <label for="url">YouTube URL *</label>
                     <input type="url" id="url" name="url" required placeholder="https://www.youtube.com/watch?v=...">
@@ -75,7 +88,6 @@
                     </div>
                 </div>
 
-                <!-- [추가] 수동 검수 모드 선택 -->
                 <div class="form-group inspection-toggle-group">
                     <label class="checkbox-container">
                         <input type="checkbox" id="inspection_mode" name="inspection_mode" value="true">
@@ -101,20 +113,27 @@
         🐞 버그/오류 제보
     </button>
 
-    <!-- 서비스 공지 모달 -->
-    <div class="modal-overlay" id="announcementModal">
-        <div class="modal-content">
-            <div class="modal-header">📢 서비스 관련 중요 공지</div>
-            <div class="modal-body">
-                <p>현재 Youtube 영상 추출 과정 중 <strong>봇 탐지</strong>에 걸리는 등 기술적인 문제로 작동되지 않고 있습니다. <br>(사이트는 열어두었지만 실행 시 작동되지 않습니다.)</p>
-                <p>이로 인해 컴퓨터에 다운받는 <strong>프로그램 방식</strong>으로 배포할 예정이며, 최대한 빠른 시일 내 배포하겠습니다.</p>
-                <p>완료 시 현재 사이트가 <strong>소개 및 다운로드 페이지</strong>로 변경되며, 계속 운영될 예정입니다. 감사합니다.</p>
+    <!-- 🚀 업데이트 알림 모달 -->
+    <div class="modal-overlay" id="updateModal">
+        <div class="modal-content" style="border: 2px solid #3b82f6;">
+            <div class="modal-header">🚀 새로운 버전 업데이트 안내</div>
+            <div class="modal-body text-center">
+                <p style="font-size: 1.1em; margin-bottom: 15px;">새로운 버전 <span id="latestVersionText" class="update-highlight"></span>이 출시되었습니다!</p>
+                <p>더 안정적인 성능과 새로운 기능을 위해 업데이트를 권장합니다.</p>
+                <p style="font-size: 0.9em; color: #94a3b8; margin-top: 10px;">(현재 버전: {{ version }})</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-close" id="closeAnnouncementBtn">확인했습니다</button>
+            <div class="modal-footer" style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-close" id="closeUpdateBtn" style="flex: 1;">나중에</button>
+                <a href="#" id="updateDownloadLink" target="_blank" class="btn btn-run" style="flex: 1; text-align: center; text-decoration: none; line-height: 1.5;">지금 다운로드</a>
             </div>
         </div>
     </div>
+
+    <!-- Local environment: limit removed
+    <div class="modal-overlay" id="announcementModal">
+        ...
+    </div>
+    -->
 
     <!-- 오류 제보 모달 -->
     <div class="modal-overlay" id="reportModal">
@@ -142,6 +161,44 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <script>
+        // 업데이트 체크 로직
+        async function checkUpdates() {
+            try {
+                const response = await fetch('/check-update');
+                const data = await response.json();
+
+                if (data.needs_update) {
+                    document.getElementById('latestVersionText').innerText = data.latest_version;
+                    document.getElementById('updateDownloadLink').href = data.download_url;
+                    document.getElementById('updateModal').style.display = 'flex';
+                }
+            } catch (err) {
+                console.error("업데이트 확인 실패:", err);
+            }
+        }
+
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            // 업데이트 체크 실행
+            checkUpdates();
+
+            // 기존 모달 제어 로직 (이하 script.js의 내용을 보완하거나 인라인으로 작성)
+            const closeUpdateBtn = document.getElementById('closeUpdateBtn');
+            if (closeUpdateBtn) {
+                closeUpdateBtn.onclick = () => {
+                    document.getElementById('updateModal').style.display = 'none';
+                };
+            }
+
+            const closeAnnouncementBtn = document.getElementById('closeAnnouncementBtn');
+            if (closeAnnouncementBtn) {
+                closeAnnouncementBtn.onclick = () => {
+                    document.getElementById('announcementModal').style.display = 'none';
+                };
+            }
+        });
+    </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

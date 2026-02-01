@@ -47,7 +47,8 @@ def process_video_frames(
         last_binary_frame = None
         last_dilated_mask = None
 
-        MAX_IMAGES = 200
+        # Local environment: limit removed
+        # MAX_IMAGES = 200
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
         while current_frame < end_f:
@@ -119,8 +120,9 @@ def process_video_frames(
                 last_binary_frame = binary
                 last_dilated_mask = dilated_mask
 
-                if len(processed_image_paths) >= MAX_IMAGES:
-                    break
+                # Local environment: limit removed
+                # if len(processed_image_paths) >= MAX_IMAGES:
+                #     break
 
             # 핵심: 다음 분석 프레임까지 순차적으로 grab() 하여 속도 향상
             # cap.set()을 반복하는 것보다 cap.grab()이 프레임 간격이 짧을 때 훨씬 빠름
