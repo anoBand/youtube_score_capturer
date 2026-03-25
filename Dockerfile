@@ -1,17 +1,28 @@
-# 가장 가벼운 Nginx 이미지를 베이스로 사용
-FROM nginx:alpine
+# Dockerfile
 
-# 기본 Nginx 설정 파일 삭제 (필요 시 커스텀 설정을 위해)
-# RUN rm /etc/nginx/conf.d/default.conf
+# 1. Python 환경 설정
+FROM python:3.10-slim
 
-# 현재 폴더의 index.html을 Nginx의 기본 웹 루트 폴더로 복사
-COPY index.html /usr/share/nginx/html/index.html
+# 2. 작업 디렉토리 생성
+WORKDIR /app
 
-# (선택 사항) 이미지 등 추가 정적 리소스가 있다면 폴더째 복사
-# COPY static/ /usr/share/nginx/html/static/
+# 3. 시스템 패키지 설치 (ffmpeg, libgl 등)
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
-# Nginx의 기본 포트인 80번 노출
+# 4. 파이썬 라이브러리 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade --no-cache-dir yt-dlp
+
+# 5. 소스 코드 복사 및 임시 폴더 생성
+COPY . .
+RUN mkdir -p temp
+
+# 6. 서비스 포트 및 실행 명령
 EXPOSE 80
-
-# Nginx 실행
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["python", "app.py"]
