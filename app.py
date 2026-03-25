@@ -137,18 +137,18 @@ def serve_temp_image(session_id, filename):
 
 
 @app.route('/get_frame', methods=['POST'])
-# def get_frame():
-    # url = request.form.get('url')
-    # time_str = request.form.get('start_time')
-    # seconds = time_to_seconds(time_str) or 0
-    # try:
-    #     stream_url = get_video_stream_url(url)
-    #     if not stream_url: return jsonify({'error': 'URL not found.'}), 400
-    #     image_bytes = get_single_frame_as_bytes(stream_url, seconds)
-    #     if image_bytes: return send_file(image_bytes, mimetype='image/jpeg')
-    #     return jsonify({'error': 'Frame capture failed.'}), 500
-    # except Exception as e:
-    #     return jsonify({'error': str(e)}), 500
+def get_frame():
+    url = request.form.get('url')
+    time_str = request.form.get('start_time')
+    seconds = time_to_seconds(time_str) or 0
+    try:
+        stream_url = get_video_stream_url(url)
+        if not stream_url: return jsonify({'error': 'URL not found.'}), 400
+        image_bytes = get_single_frame_as_bytes(stream_url, seconds)
+        if image_bytes: return send_file(image_bytes, mimetype='image/jpeg')
+        return jsonify({'error': 'Frame capture failed.'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/execute', methods=['POST'])
@@ -172,7 +172,7 @@ def execute():
             'frame_interval_sec': float(request.form.get('frame_interval_sec') or 1.0)
         }
 
-        #video_path = download_youtube_video(youtube_url, temp_dir)
+        video_path = download_youtube_video(youtube_url, temp_dir)
         image_output_dir = os.path.join(temp_dir, 'images')
         os.makedirs(image_output_dir)
         processed_image_paths = process_video_frames(video_path, image_output_dir, start_time, end_time, **config)
