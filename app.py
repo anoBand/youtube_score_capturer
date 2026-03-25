@@ -12,23 +12,12 @@ import uuid
 import webbrowser
 import subprocess
 import requests
-from packaging import version
 from flask import Flask, request, render_template, send_file, jsonify, send_from_directory
 from flask_cors import CORS
 
 # ---------------------------------------------------------
 # 1. 전역 설정 및 초기화
 # ---------------------------------------------------------
-
-# --- 버전 및 업데이트 정보 ---
-CURRENT_VERSION = "1.0.0"
-GITHUB_REPO_OWNER = "anoBand"
-GITHUB_REPO_NAME = "youtube_score_capturer"
-UPDATE_INFO = {
-    "needs_update": False,
-    "latest_version": None,
-    "download_url": None
-}
 
 # --- 모듈 임포트 ---
 from modules.youtube_downloader import get_video_stream_url, get_single_frame_as_bytes, download_youtube_video, \
@@ -86,46 +75,16 @@ def update_yt_dlp_binary():
         pass
 
 
-def check_for_updates():
-    """GitHub에서 최신 릴리스를 확인하고 업데이트 정보를 설정합니다."""
-    global UPDATE_INFO
-    api_url = f"https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/releases/latest"
-    try:
-        response = requests.get(api_url, timeout=5)
-        response.raise_for_status()
-        latest_release = response.json()
-        latest_version_str = latest_release.get("tag_name", "").lstrip('v')
-        
-        if latest_version_str:
-            current = version.parse(CURRENT_VERSION)
-            latest = version.parse(latest_version_str)
-            if latest > current:
-                UPDATE_INFO["needs_update"] = True
-                UPDATE_INFO["latest_version"] = latest_version_str
-                UPDATE_INFO["download_url"] = latest_release.get("html_url")
-    except (requests.RequestException, version.InvalidVersion):
-        pass  # 네트워크 오류 또는 버전 파싱 실패 시 조용히 실패
-
-
 def cleanup_worker():
     """만료된 임시 세션 폴더를 주기적으로 삭제합니다."""
-    # Local environment: limit removed
     # 로컬 실행 환경에서는 세션 타임아웃이 불필요하므로 관련 로직을 비활성화합니다.
-    # 주기적인 폴더 검사는 유지하되, 시간 기반 삭제 로직은 제거됩니다.
     while True:
         try:
             if os.path.exists(TEMP_BASE_DIR):
-                # 기존 로직:
-                # now = time.time()
-                # for folder_name in os.listdir(TEMP_BASE_DIR):
-                #     folder_path = os.path.join(TEMP_BASE_DIR, folder_name)
-                #     if os.path.isdir(folder_path):
-                #         if (now - os.path.getmtime(folder_path)) > 180:
-                #             shutil.rmtree(folder_path)
-                pass  # 아무 작업도 하지 않음
+                pass
         except Exception:
             pass
-        time.sleep(3600)  # 검사 주기를 1시간으로 늘림
+        time.sleep(3600)
 
 
 def cleanup_temp_dir_startup():
@@ -160,13 +119,7 @@ def time_to_seconds(time_str):
 
 @app.route('/')
 def index():
-    return render_template('index.html', version=CURRENT_VERSION)
-
-
-@app.route('/check_update')
-def check_update_route():
-    """업데이트 상태를 JSON으로 반환합니다."""
-    return jsonify(UPDATE_INFO)
+    return render_template('index.html')
 
 
 @app.route('/inspect/<session_id>')
@@ -265,7 +218,6 @@ if __name__ == '__main__':
     # 백그라운드 스레드 시작
     threading.Thread(target=cleanup_worker, daemon=True).start()
     threading.Thread(target=update_yt_dlp_binary, daemon=True).start()
-    threading.Thread(target=check_for_updates, daemon=True).start()
 
     # 브라우저 자동 실행 예약
     threading.Timer(1.5, launch_browser).start()
